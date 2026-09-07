@@ -4,10 +4,12 @@ All notable changes to ICOR for Life - Canvases.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/).
 
-## [0.3.0] - Unreleased
+## [0.3.0] - 2026-09-07
 
-Tom's second round, plus five findings on the shapes and Flint's review
-of 0.2.0.
+The first public release. 0.1.0 and 0.2.0 below were internal builds
+that never shipped; everything in them ships here. Tom's second round,
+five findings on the shapes, Flint's reviews of 0.2.0 and 0.3.0, and
+Tom's live test of the 0.3.0 build.
 
 ### Added
 - **The card menu in the column.** The canvas's bottom menu (add card,
@@ -61,6 +63,8 @@ of 0.2.0.
   change never touches a shape this build does not know.
 - Opening any flyout closes the one that is open, the canvas's own
   colour submenu included.
+- The card menu buttons inside the column take the column's hover
+  colours instead of core's bottom-bar hover lift.
 
 ### Fixed (Flint's review of 0.2.0)
 - Exports as image no longer carry the breadcrumb, the card toolbars,
@@ -71,7 +75,30 @@ of 0.2.0.
   under another plugin's do nothing after unload; the command copes with
   the core backlinks plugin being off.
 
-## [0.2.0] - Unreleased
+### Fixed (Flint's review of 0.3.0, and Tom's live test of the build)
+- The editor's mark on a styled card goes on the iframe's root element,
+  which core's style relay never rebuilds, so the fill and the text
+  colour stay while typing; the mark is cleared on dispose.
+- Zoom presets are 25, 50, 100 and 200 percent; core clamps at 200, so
+  a 400 preset could never be shown as current.
+- The zoom bar and the minimap clear Obsidian's status bar.
+- A flyout is placed from its anchor's live rectangle after measuring,
+  clamped to the window; the zoom flyout no longer lands at the
+  window's bottom left.
+- The contrast fallback uses literal black and white, since every
+  Obsidian colour token flips with the theme.
+- The outline migration from a 0.2.0 file runs after every setData, so
+  the first undo keeps the outline.
+- Core's colour submenu is closed through its own button rather than
+  detached, so the next press on the palette opens it again.
+- The minimap reads the accent colour with the node colours and on a
+  css change, not once per frame.
+- The zoom-source class leaves core's group on dispose.
+- The coexistence test keeps the plugin's keys on every node but the
+  text card; the docs name the reader of the card keys as planned and
+  correct a section number and the startEditing grep.
+
+## [0.2.0] - 2026-09-07 (internal build, never released)
 
 Tom tested 0.1.0 and asked for seven things. All seven, plus two live
 asks from the same day.
@@ -148,7 +175,7 @@ asks from the same day.
 - A shape's text is centred and padded to stay inside the visible area;
   a long text in a triangle or a star is cut, as it would be in Miro.
 
-## [0.1.0] - 2026-09-07
+## [0.1.0] - 2026-09-07 (internal build, never released)
 
 ### Added
 - First release: four things for the canvas.

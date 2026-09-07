@@ -14,7 +14,9 @@ Part of the ICOR for Life suite. Source-available; see LICENSE.
 
 ## Install
 
-Copy `main.js`, `manifest.json` and `styles.css` into
+From Obsidian's community plugin directory: Settings, Community plugins,
+Browse, search for "ICOR for Life - Canvases", install and enable. Or by
+hand: copy `main.js`, `manifest.json` and `styles.css` into
 `<vault>/.obsidian/plugins/icor-for-life-canvases/`, then enable the plugin
 under Settings, Community plugins. Needs Obsidian 1.13.0 or newer, on
 desktop and mobile. The core Canvas plugin must be on.
@@ -101,28 +103,39 @@ file ignores the key. A canvas with no strokes carries no key.
 
 ## Shapes and colours for text cards
 
-Select one text card. The canvas's floating toolbar above it gets three
-more buttons:
+Select one text card. The canvas's floating toolbar above it gets a
+**Switch shape** button (a grid of ten: card, the default, rectangle,
+rounded rectangle, ellipse, circle, diamond, triangle, parallelogram,
+speech bubble, star), a **Fill colour** button and a **Text colour**
+button. Once the card has a shape, the toolbar shows these instead, each
+colour button a swatch of its state:
 
 | Button | What it opens |
 | --- | --- |
-| Switch shape | A grid of ten: card (the default), rectangle, rounded rectangle, ellipse, circle, diamond, triangle, parallelogram, speech bubble, star. |
+| Outline colour | The six canvas colours, the card's own, and a custom colour. This is the card's own colour, the key the canvas's palette writes; on a shaped card the canvas's palette button steps aside, on a plain card it stays as it is. |
 | Fill colour | The six canvas colours, the card's own, none, and a custom colour. |
+| Outline style | Thickness from 1 to 6 screen pixels and solid, dashed or dotted, as line previews. |
+| Fit shape to text | Grows the card around its centre, keeping its aspect ratio, until the text fits. Also in the card's context menu and as a command; undo restores the size. |
 | Text colour | The six canvas colours, the card's own, and a custom colour. On a filled card without one, the text is dark or light by the fill's brightness. |
 
-The outline is the card's own colour: the canvas's palette button, as
-for any card. The shape is drawn behind the text, the text is inset into
-the shape and centred, and the editor shows the fill through when you
-double-click to edit. The card's context menu (right-click, long press)
-has a **Shape** item with the same list for the keyboard. Note cards keep
-their toolbar from 0.1.0 and are not shaped.
+The shape is drawn behind the text, the text is inset into the shape and
+centred, and the editor shows the fill through when you double-click to
+edit. A shaped card that is hovered or selected shows a thin accent frame
+around its full rectangle with four corner discs, so the resize edges can
+be found; the canvas's own resize and connector zones do the work. When
+the text does not fit inside the shape, a small "..." pill shows at the
+bottom of the shape in the text colour. The card's context menu
+(right-click, long press) has a **Shape** item with the same list for
+the keyboard. Note cards keep the toolbar described below and are not
+shaped.
 
 Where it is saved: on the card's own entry in the .canvas file, as
 `"icorShape": "diamond"` and `"icorStyle": { "version": 1, "fill": "3",
-"text": "#ffcc00" }`. Obsidian keeps unknown keys on a card across a
-load, a save, undo, redo, copy and paste. A card with the default shape
-and no colours carries neither key. Every key the plugin writes, with
-its rules, is in `docs/canvas-format.md`.
+"text": "#ffcc00", "strokeWidth": 3, "strokeStyle": "dashed" }`; the
+outline colour is the card's own `color`. Obsidian keeps unknown keys on
+a card across a load, a save, undo, redo, copy and paste. A card with the
+default shape and no styling carries neither key. Every key the plugin
+writes, with its rules, is in `docs/canvas-format.md`.
 
 ## Canvases inside canvases
 
