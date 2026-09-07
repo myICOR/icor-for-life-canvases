@@ -64,7 +64,7 @@ test('a shape and a colour change keep every foreign key on the node', () => {
   assert.equal(shape, 'star');
   assert.deepEqual(style, { version: 1, fill: '4', text: '#abc' });
   assert.equal(JSON.stringify(node), nodeText, 'the input was never mutated');
-  assert.deepEqual(readShape(texted), { shape: 'star', fill: '4', text: '#abc' });
+  assert.deepEqual(readShape(texted), { shape: 'star', fill: '4', text: '#abc', strokeWidth: 2, strokeStyle: 'solid' });
   const back = withShape(texted, { shape: 'card', fill: '', text: '' });
   assert.equal(JSON.stringify(back), nodeText, 'undoing every choice gives the original bytes back');
 });

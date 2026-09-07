@@ -11,19 +11,23 @@
  * the card where the clip would hide the border. Every card is applied
  * once when it is added and again after every `setData` (a load, an
  * undo, a paste), through an instance wrap on the node. */
-import { Menu, Notice, setIcon, setTooltip } from 'obsidian';
+import { Menu, Notice, debounce, setIcon, setTooltip } from 'obsidian';
 import type { App } from 'obsidian';
 import { Flyout, flyoutOption } from './flyout';
 import { around, hasUnknownData, isEdge, isTextNode, nodeColor, onNodeMenu } from './internals';
 import type { Canvas, CanvasNode } from './internals';
 import type { NodeAddHook } from './nodeHook';
 import type { SelectionMenuHook } from './selectionMenu';
-import { CLIPPED_SHAPES, OUTLINE_POINTS, PALETTE, SHAPES, SHAPE_LABELS, colorLabel, colorValue, isHexColor, legacyStroke, prefersDarkText, readShape, relativeLuminance, withShape, withoutLegacyStroke } from './shapeModel';
+import { CLIPPED_SHAPES, OUTLINE_POINTS, PALETTE, SHAPES, SHAPE_LABELS, colorLabel, colorValue, isHexColor, STROKE_STYLES, STROKE_WIDTHS, dashArray, fitSize, fitSizeByArea, legacyStroke, prefersDarkText, readShape, relativeLuminance, withShape, withoutLegacyStroke } from './shapeModel';
+import type { StrokeStyle } from './shapeModel';
 import type { Shape, ShapeColor, ShapeStyle } from './shapeModel';
 
 export const SHAPE_ATTR = 'data-icor-canvases-shape';
 const FILL_VAR = '--icor-canvases-fill';
 const TEXT_VAR = '--icor-canvases-text';
+const STROKE_WIDTH_VAR = '--icor-canvases-stroke-width';
+const STROKE_STYLE_VAR = '--icor-canvases-stroke-style';
+const DASH_VAR = '--icor-canvases-dash';
 const PALETTE_VAR = (n: string): string => `--canvas-color-${n}`;
 const OUTLINE_CLASS = 'icor-canvases-shape-outline';
 /* The bounding frame and its four corner handles on a shaped card: the
@@ -32,6 +36,10 @@ const OUTLINE_CLASS = 'icor-canvases-shape-outline';
    full rectangle and stacked above every card, so the frame only shows
    where they are and never takes a pointer itself. */
 const FRAME_CLASS = 'icor-canvases-frame';
+/* The "..." pill inside the inset box when the text does not fit. */
+const OVERFLOW_CLASS = 'icor-canvases-overflow';
+const OVERFLOWING_CLASS = 'icor-canvases-overflowing';
+const MEASURE_MS = 100;
 const CORNERS = ['topleft', 'topright', 'bottomright', 'bottomleft'] as const;
 const BUTTON_CLASS = 'icor-canvases-shape-button';
 /* On the editor iframe's root element: the editor paints no background
@@ -51,6 +59,15 @@ export interface ShapesHost {
 
 export class NodeShapes {
   private readonly restores = new Map<CanvasNode, () => void>();
+  /* Per shaped card: the observers that ask for a measure, and the
+     debounced measure itself. Sizes change on a resize (ResizeObserver
+     on the content box), content on a render or an edit
+     (MutationObserver on the box, and on the editor document while
+     editing); a shape change and the first render call it directly.
+     Never per frame. */
+  /* Cards whose first fit pass is waiting for its re-measure. */
+  private readonly pendingFit = new Set<CanvasNode>();
+  private readonly watchers = new Map<CanvasNode, { resize: ResizeObserver; mutation: MutationObserver; editor: MutationObserver | null; measure: () => void }>();
   /* One 1 by 1 canvas that turns any CSS colour into its channels, for
      the contrast fallback; made on first use. */
   private probe: CanvasRenderingContext2D | null = null;
@@ -76,6 +93,15 @@ export class NodeShapes {
      plugin once; routed here for the canvas that owns the node. */
   static addMenuItems(menu: Menu, node: CanvasNode, shapes: NodeShapes): void {
     if (!isTextNode(node) || !hasUnknownData(node)) return;
+    if (readShape(node.unknownData).shape !== 'card') {
+      menu.addItem((item) =>
+        item
+          .setSection('canvas')
+          .setTitle('Fit shape to text')
+          .setIcon('scaling')
+          .onClick(() => shapes.fitToText(node)),
+      );
+    }
     menu.addItem((item) =>
       item
         .setSection('canvas')
@@ -120,6 +146,8 @@ export class NodeShapes {
     this.disposed = true;
     this.unhook?.();
     this.unlisten?.();
+    this.pendingFit.clear();
+    for (const node of [...this.watchers.keys()]) this.unwatchOverflow(node);
     for (const [node, restore] of this.restores) {
       restore();
       this.clear(node);
@@ -182,6 +210,14 @@ export class NodeShapes {
     const style = readShape(node.unknownData);
     const styled = style.shape !== 'card' || style.fill !== '' || style.text !== '';
     root.toggleClass(EDITOR_BODY_CLASS, styled);
+    const watcher = this.watchers.get(node);
+    if (watcher && root.ownerDocument.body) {
+      watcher.editor?.disconnect();
+      const editor = new MutationObserver(() => watcher.measure());
+      editor.observe(root.ownerDocument.body, { childList: true, subtree: true, characterData: true });
+      watcher.editor = editor;
+      watcher.measure();
+    }
     if (!styled) return;
     const container = node.nodeEl.querySelector<HTMLElement>('.canvas-node-container');
     const color = container ? node.nodeEl.win.getComputedStyle(container).color : '';
@@ -210,6 +246,11 @@ export class NodeShapes {
     }
     this.setVar(el, FILL_VAR, colorValue(style.fill));
     this.setVar(el, TEXT_VAR, colorValue(style.text));
+    /* Outline thickness and dash, screen-constant: the box shapes take
+       them as a border, the cut shapes as the polygon's stroke. */
+    this.setVar(el, STROKE_WIDTH_VAR, shape ? String(style.strokeWidth) : '');
+    this.setVar(el, STROKE_STYLE_VAR, shape && style.strokeStyle !== 'solid' ? style.strokeStyle : '');
+    this.setVar(el, DASH_VAR, shape ? dashArray(style.strokeWidth, style.strokeStyle) : '');
     /* The colour rules apply only to cards that carry a colour, so every
        other card keeps the canvas's own look. */
     el.toggleClass('icor-canvases-filled', style.fill !== '');
@@ -221,6 +262,8 @@ export class NodeShapes {
     el.toggleClass('icor-canvases-contrast-light', contrast === 'light');
     /* A card being edited while its style changes: the editor follows. */
     if (el.hasClass('is-editing')) this.markEditor(node);
+    if (shape) this.watchOverflow(node);
+    else this.unwatchOverflow(node);
     let frame = el.querySelector<HTMLElement>(`:scope > .${FRAME_CLASS}`);
     if (shape && !frame) {
       frame = el.createDiv({ cls: FRAME_CLASS, attr: { 'aria-hidden': 'true' } });
@@ -241,6 +284,115 @@ export class NodeShapes {
     } else {
       outline?.detach();
     }
+  }
+
+  /* The content box of a card: the inset area core's content element
+     fills. */
+  private contentBox(node: CanvasNode): HTMLElement | null {
+    return node.nodeEl.querySelector<HTMLElement>(':scope > .canvas-node-container > .canvas-node-content');
+  }
+
+  private watchOverflow(node: CanvasNode): void {
+    if (this.watchers.has(node)) {
+      this.watchers.get(node)?.measure();
+      return;
+    }
+    const box = this.contentBox(node);
+    if (!box) return;
+    const measure = debounce(() => this.measureOverflow(node), MEASURE_MS, true);
+    const resize = new ResizeObserver(() => measure());
+    resize.observe(box);
+    const mutation = new MutationObserver(() => measure());
+    mutation.observe(box, { childList: true, subtree: true, characterData: true });
+    this.watchers.set(node, { resize, mutation, editor: null, measure });
+    measure();
+  }
+
+  private unwatchOverflow(node: CanvasNode): void {
+    const w = this.watchers.get(node);
+    if (!w) return;
+    w.resize.disconnect();
+    w.mutation.disconnect();
+    w.editor?.disconnect();
+    this.watchers.delete(node);
+    node.nodeEl.removeClass(OVERFLOWING_CLASS);
+    node.nodeEl.querySelector(`.${OVERFLOW_CLASS}`)?.detach();
+  }
+
+  /* The content's scroll size in canvas units, from the editor document
+     while editing and from the content box otherwise. */
+  private contentSize(node: CanvasNode): { width: number; height: number; clientWidth: number; clientHeight: number } | null {
+    const box = this.contentBox(node);
+    if (!box) return null;
+    const iframe = box.querySelector<HTMLIFrameElement>('iframe.embed-iframe');
+    const doc = node.nodeEl.hasClass('is-editing') ? iframe?.contentDocument : null;
+    if (doc?.documentElement && iframe) {
+      /* The editor scrolls inside its own scroller, so the document never
+         overflows; the content's own height is the measure. */
+      const content = doc.querySelector<HTMLElement>('.cm-content') ?? doc.documentElement;
+      return { width: content.scrollWidth, height: content.scrollHeight, clientWidth: iframe.clientWidth, clientHeight: iframe.clientHeight };
+    }
+    /* Reading view: the preview scrolls inside the box too; its sizer is
+       the rendered height. */
+    const sizer = box.querySelector<HTMLElement>('.markdown-preview-sizer');
+    const height = Math.max(box.scrollHeight, sizer?.scrollHeight ?? 0);
+    const width = Math.max(box.scrollWidth, sizer?.scrollWidth ?? 0);
+    return { width, height, clientWidth: box.clientWidth, clientHeight: box.clientHeight };
+  }
+
+  private measureOverflow(node: CanvasNode): void {
+    if (this.disposed || !this.watchers.has(node)) return;
+    const size = this.contentSize(node);
+    const box = this.contentBox(node);
+    if (!size || !box) return;
+    const overflowing = size.height > size.clientHeight + 1 || size.width > size.clientWidth + 1;
+    if (this.pendingFit.delete(node) && overflowing) {
+      this.fitToText(node, 1);
+      return;
+    }
+    const el = node.nodeEl;
+    if (el.hasClass(OVERFLOWING_CLASS) === overflowing) return;
+    el.toggleClass(OVERFLOWING_CLASS, overflowing);
+    let pill = box.querySelector<HTMLElement>(`:scope > .${OVERFLOW_CLASS}`);
+    if (overflowing && !pill) {
+      pill = box.createDiv({ cls: OVERFLOW_CLASS, text: '…', attr: { 'aria-hidden': 'true' } });
+      setTooltip(pill, 'The text does not fit; use Fit shape to text');
+    } else if (!overflowing) {
+      pill?.detach();
+    }
+  }
+
+  /* Resizes the card around its centre until the text fits, through
+     core's own resize path so undo restores the size. */
+  fitToText(node: CanvasNode, pass = 0): void {
+    if (this.canvas.readonly) {
+      new Notice(READONLY);
+      return;
+    }
+    const style = readShape(node.unknownData);
+    if (style.shape === 'card' || typeof node.moveAndResize !== 'function') return;
+    const size = this.contentSize(node);
+    if (!size) return;
+    const grid = this.canvas.options?.snapToGrid && typeof this.canvas.gridSpacing === 'number' ? this.canvas.gridSpacing : 0;
+    const input = { shape: style.shape, width: node.width, height: node.height, contentWidth: size.width, contentHeight: size.height, grid };
+    const fit = pass === 0 ? fitSizeByArea(input) : fitSize(input);
+    if (fit.width === node.width && fit.height === node.height) {
+      if (pass === 0) new Notice('The text already fits.');
+      return;
+    }
+    if (pass === 0) this.pendingFit.add(node);
+    node.moveAndResize({ x: Math.round(node.x - (fit.width - node.width) / 2), y: Math.round(node.y - (fit.height - node.height) / 2), width: fit.width, height: fit.height });
+    this.canvas.requestSave();
+    this.host.log(`fit to text: ${node.id} to ${fit.width}x${fit.height}`);
+    this.watchers.get(node)?.measure();
+  }
+
+  /* The first shaped card in the selection, for the command. */
+  selectedShaped(): CanvasNode | null {
+    for (const item of this.canvas.selection) {
+      if (!isEdge(item) && isTextNode(item) && hasUnknownData(item) && readShape(item.unknownData).shape !== 'card') return item;
+    }
+    return null;
   }
 
   /* 'dark' or 'light' text for a fill, or null when the colour cannot be
@@ -310,6 +462,8 @@ export class NodeShapes {
       this.swatch(outline, 'icor-canvases-state-ring', nodeColor(node));
       const fill = this.menuButton(menuEl, null, 'Fill colour', (anchor) => this.openColor(anchor, node, 'fill'));
       this.swatch(fill, 'icor-canvases-state-disc', style.fill);
+      this.menuButton(menuEl, 'pen-line', 'Outline style', (anchor) => this.openOutlineStyle(anchor, node));
+      this.menuButton(menuEl, 'scaling', 'Fit shape to text', () => this.fitToText(node));
     } else {
       this.menuButton(menuEl, 'paint-bucket', 'Fill colour', (anchor) => this.openColor(anchor, node, 'fill'));
     }
@@ -384,6 +538,39 @@ export class NodeShapes {
           pick(input.value);
           close();
         });
+      },
+    });
+  }
+
+  /* Thickness and dash, one flyout of two rows of line previews. */
+  private openOutlineStyle(anchor: HTMLElement, node: CanvasNode): void {
+    const current = readShape(node.unknownData);
+    Flyout.open({
+      anchor,
+      placement: 'below',
+      build: (panel, close) => {
+        panel.addClass('icor-canvases-flyout-rows');
+        const widths = panel.createDiv({ cls: 'icor-canvases-flyout-line' });
+        for (const width of STROKE_WIDTHS) {
+          const option = flyoutOption(widths, ['icor-canvases-line-option'], `Thickness: ${width}`, width === current.strokeWidth, () => {
+            this.set(node, { strokeWidth: width });
+            close();
+          });
+          option.createSvg('svg', { cls: 'icor-canvases-line-preview', attr: { viewBox: '0 0 32 16' } }, (svg) => {
+            svg.createSvg('line', { attr: { x1: '3', y1: '8', x2: '29', y2: '8', 'stroke-width': String(width) } });
+          });
+        }
+        const styles = panel.createDiv({ cls: 'icor-canvases-flyout-line' });
+        const labels: Record<StrokeStyle, string> = { solid: 'Solid', dashed: 'Dashed', dotted: 'Dotted' };
+        for (const strokeStyle of STROKE_STYLES) {
+          const option = flyoutOption(styles, ['icor-canvases-line-option'], labels[strokeStyle], strokeStyle === current.strokeStyle, () => {
+            this.set(node, { strokeStyle });
+            close();
+          });
+          option.createSvg('svg', { cls: 'icor-canvases-line-preview', attr: { viewBox: '0 0 32 16' } }, (svg) => {
+            svg.createSvg('line', { attr: { x1: '3', y1: '8', x2: '29', y2: '8', 'stroke-width': '2', 'stroke-dasharray': dashArray(2, strokeStyle) } });
+          });
+        }
       },
     });
   }

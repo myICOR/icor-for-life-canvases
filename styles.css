@@ -110,6 +110,22 @@
   --icon-stroke: var(--icon-m-stroke-width);
 }
 
+/* Inside the column the moved buttons behave like the other control
+   items: no lift on hover (core's bottom-bar animation), the column's
+   hover colours. Scoped to the moved element, so nothing applies once
+   the plugin is off. */
+.icor-canvases-wrapper .icor-canvases-card-menu .canvas-card-menu-button.mod-draggable:hover svg,
+.icor-canvases-wrapper .icor-canvases-card-menu .canvas-card-menu-button.mod-draggable svg {
+  transform: none;
+  filter: none;
+  transition: none;
+}
+
+.icor-canvases-wrapper .icor-canvases-card-menu .canvas-card-menu-button:hover {
+  color: var(--text-normal);
+  background-color: var(--interactive-hover);
+}
+
 /* The emptied zoom group in the column: hidden, its element kept. */
 .icor-canvases-wrapper .icor-canvases-zoom-source {
   display: none;
@@ -668,11 +684,12 @@
   box-shadow: none;
 }
 
-/* The selection look moves to the layer. */
-.icor-canvases-wrapper .canvas-node.is-selected[data-icor-canvases-shape] > .canvas-node-container::before,
-.icor-canvases-wrapper .canvas-node.is-focused[data-icor-canvases-shape] > .canvas-node-container::before {
-  border-color: var(--color-accent);
-  box-shadow: var(--shadow-stationary), var(--shadow-border-accent);
+/* Selection does not recolour the shape's own outline: the frame and its
+   handles carry the accent, the layer keeps the real colour. The border
+   width and style are the outline style. */
+.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape] > .canvas-node-container::before {
+  border-width: calc(var(--border-width) * var(--icor-canvases-stroke-width, 2) * var(--zoom-multiplier));
+  border-style: var(--icor-canvases-stroke-style, solid);
 }
 
 /* The content sits above the layer. */
@@ -830,15 +847,11 @@ html.icor-canvases-in-shape .cm-scroller {
 .icor-canvases-shape-outline polygon {
   fill: none;
   stroke: var(--canvas-color);
-  stroke-width: 1.5;
+  stroke-width: var(--icor-canvases-stroke-width, 2);
+  stroke-dasharray: var(--icor-canvases-dash, none);
   stroke-linejoin: round;
+  stroke-linecap: round;
   vector-effect: non-scaling-stroke;
-}
-
-.icor-canvases-wrapper .canvas-node.is-selected > .icor-canvases-shape-outline polygon,
-.icor-canvases-wrapper .canvas-node.is-focused > .icor-canvases-shape-outline polygon {
-  stroke: var(--color-accent);
-  stroke-width: 2.5;
 }
 
 /* The text colour, only on cards that carry one; and the contrast
@@ -968,6 +981,23 @@ html.icor-canvases-in-shape .cm-scroller {
   background-color: var(--icor-canvases-fill);
 }
 
+/* The "..." pill at the bottom centre of the inset box when the text does
+   not fit: the card's text colour on the fill colour, so it reads on any
+   fill; core's content box is positioned already. */
+.icor-canvases-overflow {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  padding: 0 var(--size-4-2);
+  border-radius: var(--radius-l);
+  background-color: var(--icor-canvases-fill, var(--background-primary));
+  font-size: var(--font-ui-small);
+  line-height: var(--line-height-tight);
+  pointer-events: none;
+  z-index: 1;
+}
+
 /* Core's palette button on a shaped card, replaced by the Outline flyout. */
 .icor-canvases-hidden {
   display: none;
@@ -1003,6 +1033,45 @@ html.icor-canvases-in-shape .cm-scroller {
 .icor-canvases-state-none {
   --canvas-color: var(--background-primary);
   border-style: dashed;
+}
+
+/* The outline style flyout: two rows of line previews. */
+.icor-canvases-flyout-rows {
+  flex-direction: column;
+  gap: var(--size-2-2);
+}
+
+.icor-canvases-flyout-line {
+  display: flex;
+  gap: var(--size-2-1);
+}
+
+.icor-canvases-line-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-4-10);
+  height: var(--size-4-7);
+  border-radius: var(--radius-s);
+  color: var(--text-normal);
+  cursor: var(--cursor);
+}
+
+.icor-canvases-line-option:hover,
+.icor-canvases-line-option:focus-visible {
+  background-color: var(--background-modifier-hover);
+}
+
+.icor-canvases-line-option.is-active {
+  background-color: var(--background-modifier-active-hover);
+}
+
+.icor-canvases-line-preview {
+  width: var(--size-4-8);
+  height: var(--size-4-4);
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
 }
 
 /* The shape flyout: a small card per shape. */

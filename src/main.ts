@@ -181,6 +181,18 @@ export default class CanvasesPlugin extends Plugin {
       callback: () => void this.toggleMinimap(),
     });
     this.addCommand({
+      id: 'fit-shape-to-text',
+      name: 'Fit shape to text',
+      icon: 'scaling',
+      checkCallback: (checking) => {
+        const binding = this.registry.active();
+        const node = binding?.shapes?.selectedShaped() ?? null;
+        if (!binding?.shapes || !node) return false;
+        if (!checking) binding.shapes.fitToText(node);
+        return true;
+      },
+    });
+    this.addCommand({
       id: 'group-selection',
       name: 'Group the selection',
       icon: 'create-group',

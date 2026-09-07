@@ -38,6 +38,9 @@ export interface CanvasNode {
      inside the card, with its own document that receives the app's
      stylesheets, the plugin's included. */
   startEditing?(): void;
+  /* Core's resize path; a change here goes into the canvas's history
+     through the next requestSave. */
+  moveAndResize?(rect: { x: number; y: number; width: number; height: number }): void;
 }
 
 /* A file node carries `file` (a TFile once resolved, null before) and the
@@ -90,6 +93,9 @@ export interface Canvas {
      wrapper; the layout moves the menu into the column. */
   canvasControlsEl?: HTMLElement;
   cardMenuEl?: HTMLElement;
+  /* The core Canvas settings and the grid, for fit-to-text's snapping. */
+  options?: { snapToGrid?: boolean };
+  gridSpacing?: number;
   getData(): CanvasFileData;
   setData(data: CanvasFileData): void;
   importData(data: CanvasFileData, clear?: boolean): unknown;

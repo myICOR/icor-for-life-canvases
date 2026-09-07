@@ -34,6 +34,17 @@ of 0.2.0.
   side with Text, each button a swatch of its state; core's palette
   button steps aside there and stays as it is on plain cards. Core's
   colour tint behind the text no longer shows on shaped cards.
+- **Outline style on shaped cards.** Thickness (1 to 6 screen pixels)
+  and dash (solid, dashed, dotted) from one flyout, saved as
+  `icorStyle.strokeWidth` and `strokeStyle`. Selecting a shaped card no
+  longer recolours its outline: the accent stays on the frame.
+- **Overflow and fit on shaped cards.** When the text does not fit
+  inside a shape, a small "..." pill shows at the bottom of the inset
+  area, in the text colour on the fill; measured only when the card is
+  resized, its content changes or its shape changes. "Fit shape to
+  text" (toolbar button, card menu, command) grows the card around its
+  centre, keeping its aspect ratio, until the text fits; undo restores
+  the size.
 - **Text colour** on text cards, and on a filled card without one, dark
   or light text picked from the fill's luminance.
 - `docs/canvas-format.md`: every key the plugin writes, its type,

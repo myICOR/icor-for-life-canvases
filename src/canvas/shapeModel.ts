@@ -50,13 +50,42 @@ export const SHAPE_VERSION = 1;
    the card's colour and drops. */
 export type ShapeColor = string;
 
+export type StrokeStyle = 'solid' | 'dashed' | 'dotted';
+
+export const STROKE_STYLES: readonly StrokeStyle[] = ['solid', 'dashed', 'dotted'];
+
+/* Screen pixels; the layer scales by the zoom multiplier. */
+export const STROKE_WIDTHS: readonly number[] = [1, 2, 3, 4, 6];
+
+export const DEFAULT_STROKE_WIDTH = 2;
+
 export interface ShapeStyle {
   shape: Shape;
   fill: ShapeColor;
   text: ShapeColor;
+  strokeWidth: number;
+  strokeStyle: StrokeStyle;
 }
 
-export const DEFAULT_STYLE: ShapeStyle = { shape: 'card', fill: '', text: '' };
+export const DEFAULT_STYLE: ShapeStyle = { shape: 'card', fill: '', text: '', strokeWidth: DEFAULT_STROKE_WIDTH, strokeStyle: 'solid' };
+
+export function isStrokeStyle(v: unknown): v is StrokeStyle {
+  return typeof v === 'string' && (STROKE_STYLES as readonly string[]).includes(v);
+}
+
+export function isStrokeWidth(v: unknown): v is number {
+  return typeof v === 'number' && STROKE_WIDTHS.includes(v);
+}
+
+/* The SVG dash array for a width and a pattern, in screen pixels (the
+   polygon's stroke is non-scaling): dashes three widths long with a gap
+   of two, dots as zero-length dashes under a round cap; 'none' for
+   solid. */
+export function dashArray(width: number, style: StrokeStyle): string {
+  if (style === 'dashed') return `${width * 3} ${width * 2}`;
+  if (style === 'dotted') return `0 ${width * 2}`;
+  return 'none';
+}
 
 export const PALETTE: readonly string[] = ['1', '2', '3', '4', '5', '6'];
 
@@ -90,7 +119,9 @@ export function readShape(data: unknown): ShapeStyle {
   const style = data[STYLE_KEY];
   const fill = isRecord(style) && isShapeColor(style.fill) ? style.fill : '';
   const text = isRecord(style) && isShapeColor(style.text) && style.text !== 'transparent' ? style.text : '';
-  return { shape, fill, text };
+  const strokeWidth = isRecord(style) && isStrokeWidth(style.strokeWidth) ? style.strokeWidth : DEFAULT_STROKE_WIDTH;
+  const strokeStyle = isRecord(style) && isStrokeStyle(style.strokeStyle) ? style.strokeStyle : 'solid';
+  return { shape, fill, text, strokeWidth, strokeStyle };
 }
 
 /* The 0.2.0 outline colour, if the data still carries one: a palette
@@ -116,7 +147,7 @@ export function withShape(data: Record<string, unknown>, patch: Partial<ShapeSty
     if (!patch.shape || patch.shape === 'card') delete out[SHAPE_KEY];
     else out[SHAPE_KEY] = patch.shape;
   }
-  const touchesStyle = 'fill' in patch || 'text' in patch;
+  const touchesStyle = 'fill' in patch || 'text' in patch || 'strokeWidth' in patch || 'strokeStyle' in patch;
   if (touchesStyle) {
     const style: Record<string, unknown> = isRecord(data[STYLE_KEY]) ? { ...data[STYLE_KEY] } : {};
     if ('fill' in patch) {
@@ -126,6 +157,14 @@ export function withShape(data: Record<string, unknown>, patch: Partial<ShapeSty
     if ('text' in patch) {
       if (patch.text) style.text = patch.text;
       else delete style.text;
+    }
+    if ('strokeWidth' in patch) {
+      if (patch.strokeWidth && patch.strokeWidth !== DEFAULT_STROKE_WIDTH) style.strokeWidth = patch.strokeWidth;
+      else delete style.strokeWidth;
+    }
+    if ('strokeStyle' in patch) {
+      if (patch.strokeStyle && patch.strokeStyle !== 'solid') style.strokeStyle = patch.strokeStyle;
+      else delete style.strokeStyle;
     }
     delete style.version;
     if (Object.keys(style).length === 0) delete out[STYLE_KEY];
@@ -173,4 +212,102 @@ export const CONTRAST_THRESHOLD = 0.5;
 
 export function prefersDarkText(luminance: number): boolean {
   return luminance > CONTRAST_THRESHOLD;
+}
+
+/* The inset of the content box inside each shape, as fractions of the
+   card's height (top, bottom) and width (left, right); the stylesheet's
+   padding table point for point. A circle is drawn on the largest
+   square that fits the card and its content box is that square's
+   inscribed square, so it is handled apart. */
+export interface Inset {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+export const INSETS: Readonly<Record<Shape, Inset>> = {
+  card: { top: 0, right: 0, bottom: 0, left: 0 },
+  rectangle: { top: 0, right: 0, bottom: 0, left: 0 },
+  rounded: { top: 0, right: 0, bottom: 0, left: 0 },
+  ellipse: { top: 0.15, right: 0.15, bottom: 0.15, left: 0.15 },
+  circle: { top: 0, right: 0, bottom: 0, left: 0 },
+  diamond: { top: 0.25, right: 0.25, bottom: 0.25, left: 0.25 },
+  triangle: { top: 0.45, right: 0.25, bottom: 0.08, left: 0.25 },
+  parallelogram: { top: 0.06, right: 0.2, bottom: 0.06, left: 0.2 },
+  bubble: { top: 0.08, right: 0.08, bottom: 0.28, left: 0.08 },
+  star: { top: 0.34, right: 0.28, bottom: 0.24, left: 0.28 },
+};
+
+/* The circle's content square, as a fraction of the drawn square. */
+export const CIRCLE_INNER = 0.7;
+
+export interface FitInput {
+  shape: Shape;
+  width: number;
+  height: number;
+  /* The content's scroll size, in canvas units. */
+  contentWidth: number;
+  contentHeight: number;
+  /* The canvas grid, when snapping is on; 0 otherwise. */
+  grid: number;
+}
+
+/* The outer size that fits the content: the inner box the content needs,
+   divided by the shape's inner fractions, then both sides scaled by the
+   same factor so the card keeps its aspect ratio and never shrinks;
+   rounded up to the grid when there is one. */
+export function fitSize(input: FitInput): { width: number; height: number } {
+  const { shape, width, height, contentWidth, contentHeight, grid } = input;
+  let needW: number;
+  let needH: number;
+  if (shape === 'circle') {
+    const side = Math.max(contentWidth, contentHeight) / CIRCLE_INNER;
+    needW = side;
+    needH = side;
+  } else {
+    const inset = INSETS[shape];
+    needW = contentWidth / (1 - inset.left - inset.right);
+    needH = contentHeight / (1 - inset.top - inset.bottom);
+  }
+  let w: number;
+  let h: number;
+  if (shape === 'circle') {
+    /* A circle is drawn on a square: the card becomes one, no smaller
+       than either side it had. */
+    w = Math.max(needW, width, height);
+    h = w;
+  } else {
+    const scale = Math.max(1, needW / width, needH / height);
+    w = width * scale;
+    h = height * scale;
+  }
+  const snap = (v: number): number => (grid > 0 ? Math.ceil(v / grid) * grid : Math.ceil(v));
+  return { width: snap(w), height: snap(h) };
+}
+
+/* Wrapped text reflows as the card widens, so scaling the wrapped height
+   overshoots. The first fit pass keeps the text's area (its wrapped
+   width times height, plus a margin for line breaks) and solves for the
+   card at its current aspect ratio; a second, linear pass runs only if
+   the re-measure still overflows. */
+export const AREA_MARGIN = 1.2;
+
+export function fitSizeByArea(input: FitInput): { width: number; height: number } {
+  const { shape, width, height, contentWidth, contentHeight, grid } = input;
+  const area = contentWidth * contentHeight * AREA_MARGIN;
+  const snap = (v: number): number => (grid > 0 ? Math.ceil(v / grid) * grid : Math.ceil(v));
+  if (shape === 'circle') {
+    const side = Math.sqrt(area) / CIRCLE_INNER;
+    const w = Math.max(side, width, height);
+    return { width: snap(w), height: snap(w) };
+  }
+  const inset = INSETS[shape];
+  const innerW = 1 - inset.left - inset.right;
+  const innerH = 1 - inset.top - inset.bottom;
+  const aspect = width / height;
+  const needH = Math.sqrt(area / (aspect * innerW * innerH));
+  const needW = aspect * needH;
+  const scale = Math.max(1, needW / width, needH / height);
+  return { width: snap(width * scale), height: snap(height * scale) };
 }

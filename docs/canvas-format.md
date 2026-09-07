@@ -51,6 +51,8 @@ member of `metadata` as it was.
 | `.version` | integer | 1 | Written with the style; see versioning. |
 | `.fill` | `"1"` to `"6"`, `"transparent"`, or `#rgb` / `#rrggbb` | absent (the theme's card background) | |
 | `.text` | `"1"` to `"6"` or `#rgb` / `#rrggbb` | absent (the theme's text colour; on a filled card, dark or light by the fill's luminance) | |
+| `.strokeWidth` | one of 1, 2, 3, 4, 6 (screen pixels) | absent (2) | The outline's thickness; added in 0.3.0 under version 1, so a reader without it shows the default. |
+| `.strokeStyle` | `"solid"`, `"dashed"`, `"dotted"` | absent (solid) | The outline's dash pattern; same note. |
 | `.stroke` | | | Written by 0.2.0 only. The Outline flyout on a shaped card writes `color`, core's own key, never a key of ours. 0.3.0 reads it once, writes it into the card's own `color` when the card has none, removes it, and the next save carries the result. The outline is the card's `color`. |
 
 Read rule: `readShape` reads what it understands and defaults the rest.

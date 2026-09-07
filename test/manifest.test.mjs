@@ -90,7 +90,7 @@ test('every named import from obsidian exists at minAppVersion', () => {
 test('commands: bare ids, sentence case, icons, no default hotkeys', () => {
   const src = read('src/main.ts');
   const ids = [...src.matchAll(/id: '([^']+)'/g)].map((m) => m[1]);
-  assert.deepEqual(ids, ['toggle-drawing-mode', 'select-tool', 'hand-tool', 'eraser-tool', 'zoom-to-fit', 'zoom-to-100', 'toggle-minimap', 'group-selection', 'undo-last-stroke', 'open-canvases-panel']);
+  assert.deepEqual(ids, ['toggle-drawing-mode', 'select-tool', 'hand-tool', 'eraser-tool', 'zoom-to-fit', 'zoom-to-100', 'toggle-minimap', 'fit-shape-to-text', 'group-selection', 'undo-last-stroke', 'open-canvases-panel']);
   for (const id of ids) assert.doesNotMatch(id, /icor|canvases:|:/, `${id} carries a prefix`);
   const names = [...src.matchAll(/name: '([^']+)'/g)].map((m) => m[1]);
   assert.equal(names.length, ids.length);
