@@ -20,10 +20,9 @@ export function swatch(panel: HTMLElement, color: InkColor, label: string, activ
   return flyoutOption(panel, cls, label, active, onChoose);
 }
 
-export function openColorPicker(anchor: HTMLElement, host: HTMLElement, placement: FlyoutPlacement, current: InkColor, onPick: (color: InkColor) => void): void {
+export function openColorPicker(anchor: HTMLElement, placement: FlyoutPlacement, current: InkColor, onPick: (color: InkColor) => void): void {
   Flyout.open({
     anchor,
-    host,
     placement,
     build(panel, close) {
       for (const color of INK_COLORS) {
@@ -36,10 +35,9 @@ export function openColorPicker(anchor: HTMLElement, host: HTMLElement, placemen
   });
 }
 
-export function openWidthPicker(anchor: HTMLElement, host: HTMLElement, placement: FlyoutPlacement, current: InkWidth, onPick: (width: InkWidth) => void): void {
+export function openWidthPicker(anchor: HTMLElement, placement: FlyoutPlacement, current: InkWidth, onPick: (width: InkWidth) => void): void {
   Flyout.open({
     anchor,
-    host,
     placement,
     build(panel, close) {
       for (const width of INK_WIDTHS) {

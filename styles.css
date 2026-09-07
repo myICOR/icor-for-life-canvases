@@ -83,23 +83,64 @@
   max-width: none;
 }
 
-/* The tool group positions its flyouts. */
-.icor-canvases-tools {
-  position: relative;
+/* The breadcrumb of a nested canvas: top left of the wrapper, untransformed,
+   above the cards and under nothing. */
+.icor-canvases-breadcrumb {
+  position: absolute;
+  top: var(--size-4-2);
+  left: var(--size-4-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-2-2);
+  z-index: var(--layer-cover);
+}
+
+.icor-canvases-breadcrumb-item {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-1);
+  padding: var(--size-2-1) var(--size-4-2);
+  border-radius: var(--radius-l);
+  background-color: var(--background-secondary);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  line-height: var(--line-height-tight);
+  box-shadow: var(--shadow-s);
+  cursor: var(--cursor);
+  white-space: nowrap;
+}
+
+.icor-canvases-breadcrumb-item:hover,
+.icor-canvases-breadcrumb-item:focus-visible {
+  color: var(--text-normal);
+  background-color: var(--background-modifier-hover);
+}
+
+.icor-canvases-breadcrumb-icon svg {
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+  display: block;
 }
 
 /* Flyouts: the canvas's own submenu look (the borrowed class carries the
-   border, background and shadow), placed below the anchor inside the
-   selection menu or to the left of it inside the controls column. */
-.icor-canvases-flyout {
+   border, background and shadow), fixed in the window at the anchor's
+   rectangle, above the canvas controls (--layer-cover) and its menu. */
+.canvas-submenu.icor-canvases-flyout {
+  position: fixed;
   z-index: var(--layer-menu);
+  top: var(--icor-canvases-flyout-top);
+  left: auto;
+  right: auto;
+  transform: none;
 }
 
-.icor-canvases-flyout-left {
-  top: var(--icor-canvases-flyout-top, 0);
-  left: auto;
-  right: calc(100% + var(--size-4-1));
-  transform: none;
+.canvas-submenu.icor-canvases-flyout-left {
+  right: calc(var(--icor-canvases-flyout-right) + var(--size-4-1));
+}
+
+.canvas-submenu.icor-canvases-flyout-below {
+  left: var(--icor-canvases-flyout-left);
+  transform: translate(-50%, var(--size-4-1));
 }
 
 .icor-canvases-flyout-grid {

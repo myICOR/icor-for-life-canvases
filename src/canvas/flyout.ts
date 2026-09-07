@@ -1,12 +1,16 @@
 /* A small popover anchored to a button: every option visible at once,
  * the way the canvas's own colour submenu opens under its palette button
  * (1.13.7, `canvas-submenu`). One flyout is open at a time; a press
- * outside it, Escape, or choosing an option closes it. The panel carries
- * the canvas's submenu class so the theme styles it like core's, and a
- * placement class of its own: below the anchor inside the floating
- * selection menu, or to the left of the anchor inside the controls column
- * on the right edge. Options are buttons for the keyboard: the first one
- * takes focus on open, Enter and Space activate. */
+ * outside it, Escape, a scroll, a wheel turn, a resize, or choosing an
+ * option closes it. The panel lives in the body of the anchor's window
+ * (a pop-out has its own), fixed at the anchor's rectangle, above the
+ * canvas's controls and menu: the canvas wrapper is `contain: strict`
+ * and the control group clips, so a child of either is cut off. It
+ * carries the canvas's submenu class so the theme styles it like core's,
+ * and a placement class of its own: below the anchor for the floating
+ * selection menu, to the left of it for the controls column on the right
+ * edge. Options are buttons for the keyboard: the first one takes focus
+ * on open, Enter and Space activate. */
 import { setTooltip } from 'obsidian';
 
 export type FlyoutPlacement = 'below' | 'left';
@@ -14,8 +18,6 @@ export type FlyoutPlacement = 'below' | 'left';
 export interface FlyoutOptions {
   /* The button the flyout hangs on; gets `is-active` while open. */
   anchor: HTMLElement;
-  /* Where the panel is appended: a positioned ancestor of the anchor. */
-  host: HTMLElement;
   placement: FlyoutPlacement;
   /* Wider panels lay their options out on a grid of this many columns. */
   columns?: number;
@@ -49,25 +51,36 @@ export class Flyout {
   }
 
   private constructor(private readonly options: FlyoutOptions) {
-    const { anchor, host, placement, columns } = options;
-    const el = host.createDiv({ cls: ['canvas-submenu', 'icor-canvases-flyout', `icor-canvases-flyout-${placement}`], attr: { role: 'group' } });
+    const { anchor, placement, columns } = options;
+    const doc = anchor.doc;
+    const el = doc.body.createDiv({ cls: ['canvas-submenu', 'icor-canvases-flyout', `icor-canvases-flyout-${placement}`], attr: { role: 'group' } });
     if (columns) {
       el.addClass('icor-canvases-flyout-grid');
       el.setCssProps({ '--icor-canvases-flyout-columns': String(columns) });
     }
-    /* Beside the anchor, not the host's top: measured once, on open. */
-    if (placement === 'left') el.setCssProps({ '--icor-canvases-flyout-top': `${anchor.offsetTop}px` });
+    /* Measured once, on open; anything that moves the anchor closes. */
+    const rect = anchor.getBoundingClientRect();
+    const win = anchor.win;
+    if (placement === 'left') {
+      el.setCssProps({
+        '--icor-canvases-flyout-top': `${rect.top}px`,
+        '--icor-canvases-flyout-right': `${win.innerWidth - rect.left}px`,
+      });
+    } else {
+      el.setCssProps({
+        '--icor-canvases-flyout-top': `${rect.bottom}px`,
+        '--icor-canvases-flyout-left': `${rect.left + rect.width / 2}px`,
+      });
+    }
     this.el = el;
     anchor.addClass('is-active');
-    const close = (): void => this.close();
-    options.build(el, close);
+    options.build(el, () => this.close());
     const signal = this.abort.signal;
     /* Presses stay inside: the canvas must not see one as a press on the
        wrapper (a rubber band, a pan) or the controls (another button). */
     for (const type of ['pointerdown', 'click', 'dblclick', 'contextmenu'] as const) {
       el.addEventListener(type, (evt) => evt.stopPropagation(), { signal });
     }
-    const doc = anchor.doc;
     doc.addEventListener(
       'pointerdown',
       (evt) => {
@@ -88,6 +101,10 @@ export class Flyout {
       },
       { capture: true, signal },
     );
+    const close = (): void => this.close();
+    doc.addEventListener('scroll', close, { capture: true, signal });
+    doc.addEventListener('wheel', close, { capture: true, passive: true, signal });
+    win.addEventListener('resize', close, { signal });
     el.querySelector<HTMLElement>('[tabindex="0"], button')?.focus();
   }
 

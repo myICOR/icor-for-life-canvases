@@ -285,9 +285,8 @@ export class ToolControls {
   /* The pickers open as flyouts to the left of their button. */
   private pickColor(): void {
     const anchor = this.items.color;
-    const group = this.group;
-    if (!anchor || !group) return;
-    openColorPicker(anchor, group, 'left', this.ink.color, (color) => {
+    if (!anchor) return;
+    openColorPicker(anchor, 'left', this.ink.color, (color) => {
       this.ink.setColor(color);
       this.reflect();
     });
@@ -295,9 +294,8 @@ export class ToolControls {
 
   private pickWidth(): void {
     const anchor = this.items.width;
-    const group = this.group;
-    if (!anchor || !group) return;
-    openWidthPicker(anchor, group, 'left', this.ink.width, (width) => {
+    if (!anchor) return;
+    openWidthPicker(anchor, 'left', this.ink.width, (width) => {
       this.ink.setWidth(width);
       this.reflect();
     });
