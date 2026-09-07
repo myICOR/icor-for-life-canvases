@@ -97,13 +97,14 @@ test('every class the plugin adds carries the icor-canvases- prefix, apart from 
   const borrowed = new Set([
     'canvas-control-group', 'mod-raised', 'canvas-control-item', 'is-empty', 'is-active', 'is-erasing', 'is-collapsed',
     'tree-item-self', 'is-clickable', 'tree-item-icon', 'collapse-icon', 'tree-item-inner', 'tree-item-flair-outer', 'tree-item-flair', 'search-result-container', 'search-empty-state',
+    'canvas-submenu', 'canvas-color-picker-item',
   ]);
   for (const f of sources) {
     const text = readFileSync(f, 'utf8');
     for (const m of text.matchAll(/(?:addClass|cls:)\s*\(?\s*(\[[^\]]*\]|'[^']+'|`[^`]+`)/g)) {
       for (const cls of m[1].matchAll(/['`]([^'`]+)['`]/g)) {
         const name = cls[1].replace(/\$\{[^}]*\}/g, 'x');
-        assert.ok(name.startsWith('icor-canvases-') || borrowed.has(name) || /^is-x$/.test(name), `${f.slice(repo.length + 1)}: class ${name}`);
+        assert.ok(name.startsWith('icor-canvases-') || borrowed.has(name) || /^(is|mod-canvas-color)-x$/.test(name), `${f.slice(repo.length + 1)}: class ${name}`);
       }
     }
   }

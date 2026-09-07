@@ -74,6 +74,68 @@
   stroke-width: 3.5;
 }
 
+/* The ink control group positions its flyouts. */
+.icor-canvases-ink-controls {
+  position: relative;
+}
+
+/* Flyouts: the canvas's own submenu look (the borrowed class carries the
+   border, background and shadow), placed below the anchor inside the
+   selection menu or to the left of it inside the controls column. */
+.icor-canvases-flyout {
+  z-index: var(--layer-menu);
+}
+
+.icor-canvases-flyout-left {
+  top: var(--icor-canvases-flyout-top, 0);
+  left: auto;
+  right: calc(100% + var(--size-4-1));
+  transform: none;
+}
+
+.icor-canvases-flyout-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--icor-canvases-flyout-columns), auto);
+  gap: var(--size-2-1);
+}
+
+/* The default ink colour is the text colour. */
+.icor-canvases-swatch-default {
+  --canvas-color: var(--text-normal);
+}
+
+.icor-canvases-swatch:focus-visible {
+  box-shadow: 0 0 0 var(--size-2-1) var(--background-modifier-border-focus);
+}
+
+.icor-canvases-width-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-4-8);
+  height: var(--size-4-8);
+  border-radius: var(--radius-s);
+  color: var(--text-normal);
+  cursor: var(--cursor);
+}
+
+.icor-canvases-width-option:hover,
+.icor-canvases-width-option:focus-visible {
+  background-color: var(--background-modifier-hover);
+}
+
+.icor-canvases-width-option.is-active {
+  background-color: var(--background-modifier-active-hover);
+}
+
+.icor-canvases-width-preview {
+  width: var(--icon-l);
+  height: var(--icon-l);
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+}
+
 /* The draw surface: over the cards, under the controls, only while a pen
    mode is on. */
 .icor-canvases-ink-surface {

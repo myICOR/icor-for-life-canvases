@@ -12,9 +12,10 @@
 import { Notice, setIcon, setTooltip } from 'obsidian';
 import type { InkColor, InkStroke } from './format';
 import { readInk, withInk } from './format';
-import { INK_COLOR_NAMES, INK_WIDTH_UNITS, StrokeBuilder, newStrokeId, nextColor, nextWidth, pathData, strokeHit } from './inkModel';
+import { INK_COLOR_NAMES, INK_WIDTH_UNITS, StrokeBuilder, newStrokeId, pathData, strokeHit } from './inkModel';
 import type { InkWidth } from './inkModel';
 import { around, targetElement } from './internals';
+import { WIDTH_LABELS, openColorPicker, openWidthPicker } from './pickers';
 import type { Canvas, CanvasMember } from './internals';
 
 export type InkMode = 'off' | 'draw' | 'erase';
@@ -188,12 +189,20 @@ export class InkLayer {
     new Notice('Click the clear button again within five seconds to remove every stroke on this canvas.');
   }
 
-  cycleColor(): void {
-    this.setColor(nextColor(this.color));
+  /* The pickers open as flyouts to the left of their button, every option
+     visible; a second press on the button closes. */
+  pickColor(): void {
+    const anchor = this.items.color;
+    const group = this.group;
+    if (!anchor || !group) return;
+    openColorPicker(anchor, group, 'left', this.color, (color) => this.setColor(color));
   }
 
-  cycleWidth(): void {
-    this.setWidth(nextWidth(this.width));
+  pickWidth(): void {
+    const anchor = this.items.width;
+    const group = this.group;
+    if (!anchor || !group) return;
+    openWidthPicker(anchor, group, 'left', this.width, (width) => this.setWidth(width));
   }
 
   /* New defaults from the settings, applied to this canvas at once. */
@@ -224,7 +233,7 @@ export class InkLayer {
     const el = this.items.width;
     if (!el) return;
     el.className = `canvas-control-item icor-canvases-ink-item icor-canvases-ink-width icor-canvases-ink-width-${width}`;
-    setTooltip(el, `Stroke width: ${width}`, { placement: 'left' });
+    setTooltip(el, `Stroke width: ${WIDTH_LABELS[width]}`, { placement: 'left' });
   }
 
   private buildControls(): void {
@@ -238,8 +247,8 @@ export class InkLayer {
     this.group = controlsEl.createDiv({ cls: ['canvas-control-group', 'mod-raised', 'icor-canvases-ink-controls'] });
     this.items.pencil = this.item('pencil', 'Draw on the canvas', () => this.toggleDraw());
     this.items.eraser = this.item('eraser', 'Erase strokes', () => this.toggleErase());
-    this.items.color = this.item('circle', '', () => this.cycleColor());
-    this.items.width = this.item('pen-line', '', () => this.cycleWidth());
+    this.items.color = this.item('circle', '', () => this.pickColor());
+    this.items.width = this.item('pen-line', '', () => this.pickWidth());
     this.item('undo-2', 'Undo last stroke', () => this.undoLast());
     this.item('trash-2', 'Clear all strokes', () => this.clearAll());
     this.setColor(this.color);
