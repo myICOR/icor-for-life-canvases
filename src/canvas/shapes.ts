@@ -27,8 +27,12 @@ const TEXT_VAR = '--icor-canvases-text';
 const PALETTE_VAR = (n: string): string => `--canvas-color-${n}`;
 const OUTLINE_CLASS = 'icor-canvases-shape-outline';
 const BUTTON_CLASS = 'icor-canvases-shape-button';
-/* On the editor iframe's body: the editor paints no background of its own
-   over the shape's fill, and its text takes the card's colour. */
+/* On the editor iframe's root element: the editor paints no background
+   of its own over the shape's fill, and its text takes the card's colour.
+   The root, not the body: core's style relay rebuilds the iframe body's
+   class list from the main body on every mutation and drops a class it
+   did not seed (1.13.7, onIframeLoad runs twice); it never touches the
+   html element. */
 const EDITOR_BODY_CLASS = 'icor-canvases-in-shape';
 const EDITOR_TEXT_VAR = '--icor-canvases-editor-text';
 const READONLY = 'This canvas is read-only.';
@@ -158,18 +162,18 @@ export class NodeShapes {
   private markEditor(node: CanvasNode, attempt = 0): void {
     if (this.disposed) return;
     const iframe = node.nodeEl.querySelector<HTMLIFrameElement>('iframe.embed-iframe');
-    const body = iframe?.contentDocument?.body;
-    if (!body) {
+    const root = iframe?.contentDocument?.documentElement;
+    if (!root) {
       if (attempt < 30) node.nodeEl.win.requestAnimationFrame(() => this.markEditor(node, attempt + 1));
       return;
     }
     const style = readShape(node.unknownData);
     const styled = style.shape !== 'card' || style.fill !== '' || style.text !== '';
-    body.toggleClass(EDITOR_BODY_CLASS, styled);
+    root.toggleClass(EDITOR_BODY_CLASS, styled);
     if (!styled) return;
     const container = node.nodeEl.querySelector<HTMLElement>('.canvas-node-container');
     const color = container ? node.nodeEl.win.getComputedStyle(container).color : '';
-    if (color) body.setCssProps({ [EDITOR_TEXT_VAR]: color });
+    if (color) root.setCssProps({ [EDITOR_TEXT_VAR]: color });
   }
 
   /* A 0.2.0 outline colour becomes the card's own colour (when the card

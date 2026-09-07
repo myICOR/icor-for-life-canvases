@@ -701,19 +701,20 @@
 }
 
 /* The editor of a styled card is an iframe with its own document, which
-   receives this stylesheet; the plugin marks its body when editing
-   starts. No background of its own over the fill, and the card's text
-   colour (set on the body from the card) for the text and the caret. */
-body.icor-canvases-in-shape {
+   receives this stylesheet; the plugin marks its root element when
+   editing starts (the body's classes are rebuilt by core's relay). No
+   background of its own over the fill, and the card's text colour (set
+   on the root from the card) for the text and the caret. */
+html.icor-canvases-in-shape body {
   background-color: transparent;
   --text-normal: var(--icor-canvases-editor-text);
   --caret-color: var(--icor-canvases-editor-text);
   color: var(--icor-canvases-editor-text);
 }
 
-body.icor-canvases-in-shape .markdown-source-view,
-body.icor-canvases-in-shape .cm-editor,
-body.icor-canvases-in-shape .cm-scroller {
+html.icor-canvases-in-shape .markdown-source-view,
+html.icor-canvases-in-shape .cm-editor,
+html.icor-canvases-in-shape .cm-scroller {
   background-color: transparent;
 }
 
