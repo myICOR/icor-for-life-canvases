@@ -2,8 +2,11 @@
 
 ICOR for Life - Canvases draws on a canvas, opens notes in other panes,
 adds a toolbar to note cards, and reads every .canvas file in the vault to
-list where a note sits. It writes one thing: the ink, into the .canvas
-file of the canvas you drew on, through the canvas's own save path. It
+list where a note sits. It writes into the vault in three ways, every one
+started by a click: the ink and a text card's shape, colours, size and
+position into the .canvas file being edited, through the canvas's own
+save path; a new empty .canvas file next to the parent when you choose
+"New canvas here"; and its own settings into data.json. Nothing else. It
 opens no connection, spawns no process, touches no clipboard and reads no
 file outside the vault. That is the whole capability, and this document
 says so with the file to read behind each claim.
@@ -44,7 +47,9 @@ Only the most recent release is supported. One branch, no backports.
 | Claim | Where to read it |
 | --- | --- |
 | Reads every `.canvas` file in the vault through `vault.cachedRead` and parses it as JSON. Reads nothing else. | `src/index/CanvasIndex.ts` |
-| Writes the ink into the open canvas's data object and calls the canvas's own `requestSave`. Never writes a file itself. | `src/canvas/ink.ts` (`commit`), `src/canvas/format.ts` |
+| Writes the ink and a text card's shape keys into the open canvas's data and calls the canvas's own `requestSave`; sets a card's colour and size through core's `setColor` and `moveAndResize`; adds a group or a file card through core's `createGroupNode` and `createFileNode`. | `src/canvas/ink.ts` (`commit`), `src/canvas/shapes.ts` (`set`, `openOutline`, `fitToText`), `src/canvas/tools.ts` (`createGroup`), `src/canvas/nested.ts` (`create`) |
+| Creates one empty `.canvas` file, next to the parent canvas, with the name you type, through `vault.create`. The name is validated as a single file name inside that folder. Nothing else is created, modified, renamed or deleted. | `src/canvas/nested.ts` (`create`), `src/canvas/naming.ts` |
+| Saves its settings to its own `data.json` through `saveData`. | `src/main.ts` (`saveSettings`) |
 | Opens notes through `workspace.getLeaf`, `getRightLeaf`, `openFile`, `revealLeaf`. | `src/open.ts`, `src/canvas/navigate.ts` |
 | Touches Obsidian's unpublished canvas object through one module with a runtime check per member. | `src/canvas/internals.ts` |
 | Wraps three methods on a canvas instance (`setData`, `applyHistory`, `addNode`) to re-render after a load and to decorate a new card; restores them on unload. Never patches a prototype. | `src/canvas/ink.ts`, `src/canvas/nodeToolbar.ts`, `around` in `src/canvas/internals.ts` |
