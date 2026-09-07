@@ -1,6 +1,8 @@
 # Changelog
 
 All notable changes to ICOR for Life - Canvases.
+Tom is the maintainer; Flint is the platform review and Vex the security
+audit every release goes through before its tag.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/).
 

@@ -17,9 +17,9 @@ the development Mac on 2026-09-06 and 2026-09-07:
   which contains no canvas declarations at all. `test/manifest.test.mjs`
   checks every named import against its `@since` tag and the manifest's
   `minAppVersion` of 1.13.0.
-- Flint's feasibility read of the same bundle:
-  `03 WiP/2026-09-06-icor-for-life-canvases/flint-canvas-api-feasibility.md`
-  in the vault, with byte offsets into `app.js`.
+- A byte-offset read of the same bundle by the suite's platform
+  reviewer informed the member table; the offsets are not reproduced
+  here, the greps in the table find the same spots.
 
 ## Modules
 
