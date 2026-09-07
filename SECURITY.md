@@ -46,7 +46,7 @@ Only the most recent release is supported. One branch, no backports.
 
 | Claim | Where to read it |
 | --- | --- |
-| Reads the `.canvas` files the metadata cache names as link sources (`metadataCache.resolvedLinks`), and the ones the vault's create, rename and modify events name, through `vault.cachedRead`, and parses each as JSON. Never enumerates the vault; reads nothing else. | `src/index/CanvasIndex.ts` |
+| Reads the `.canvas` files the metadata cache names as link sources (`metadataCache.resolvedLinks`), the ones its `resolve` event names as core indexes them, and the ones the vault's create, rename and modify events name, through `vault.cachedRead`, and parses each as JSON. Never enumerates the vault; reads nothing else. | `src/index/CanvasIndex.ts` |
 | Writes the ink and a text card's shape keys into the open canvas's data and calls the canvas's own `requestSave`; sets a card's colour and size through core's `setColor` and `moveAndResize`; adds a group or a file card through core's `createGroupNode` and `createFileNode`. | `src/canvas/ink.ts` (`commit`), `src/canvas/shapes.ts` (`set`, `openOutline`, `fitToText`), `src/canvas/tools.ts` (`createGroup`), `src/canvas/nested.ts` (`create`) |
 | Creates one empty `.canvas` file, next to the parent canvas, with the name you type, through `vault.create`. The name is validated as a single file name inside that folder. Nothing else is created, modified, renamed or deleted. | `src/canvas/nested.ts` (`create`), `src/canvas/naming.ts` |
 | Saves its settings to its own `data.json` through `saveData`. | `src/main.ts` (`saveSettings`) |

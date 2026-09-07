@@ -117,6 +117,9 @@ test('outline style: defaults remove their keys, others persist, the dash array 
   assert.equal(dashArray(3, 'dashed'), '9 6');
   assert.equal(dashArray(2, 'dotted'), '0 4');
   assert.equal(dashArray(4, 'solid'), 'none');
+  const { dashPair } = await import('./build/pure.mjs');
+  assert.deepEqual(dashPair(3, 'dashed'), [9, 6]);
+  assert.deepEqual(dashPair(4, 'solid'), [0, 0], 'an all-zero dash array renders solid');
 });
 
 test('fitSizeByArea keeps the text area at the current ratio and never shrinks', async () => {

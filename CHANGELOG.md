@@ -14,7 +14,8 @@ The directory's scan of 0.3.0, before the listing.
 - **Shapes are SVG geometry.** Every shape but the rectangle and the
   rounded rectangle is drawn as one SVG layer behind the card's content
   (an ellipse, a polygon, a path for the speech bubble), stretched to
-  the card, with the fill and a screen-constant stroke; the stylesheet
+  the card, with the fill and a stroke that follows the zoom the way the
+  box shapes' border does; the stylesheet
   uses no `clip-path`, which the scanner flags as partially supported.
   Insets, the frame, the overflow pill and Fit shape to text are as
   before.

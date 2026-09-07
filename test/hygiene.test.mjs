@@ -132,7 +132,7 @@ test('the stylesheet: prefixed selectors, Obsidian variables only, no hex, no pi
   }
   /* The icon stroke widths are unitless SVG numbers, the one literal the
      sheet carries on purpose. */
-  for (const m of css.matchAll(/stroke-width\s*:\s*([^;]+);/g)) assert.match(m[1].trim(), /^\d+(\.\d+)?$|^var\(--icor-canvases-/);
+  for (const m of css.matchAll(/stroke-width\s*:\s*([^;]+);/g)) assert.match(m[1].trim(), /^\d+(\.\d+)?$|^var\(--icor-canvases-|^calc\(var\(--icor-canvases-/);
 });
 
 test('the built plugin bundles nothing but its own code', () => {

@@ -82,14 +82,20 @@ export function isStrokeWidth(v: unknown): v is number {
   return typeof v === 'number' && STROKE_WIDTHS.includes(v);
 }
 
-/* The SVG dash array for a width and a pattern, in screen pixels (the
-   polygon's stroke is non-scaling): dashes three widths long with a gap
-   of two, dots as zero-length dashes under a round cap; 'none' for
-   solid. */
+/* The SVG dash for a width and a pattern as two numbers, in the outline's
+   own pixels before the zoom factor the stylesheet applies: dashes three
+   widths long with a gap of two, dots as zero-length dashes under a round
+   cap, and 0 0 for solid (an all-zero dash array renders solid). */
+export function dashPair(width: number, style: StrokeStyle): [number, number] {
+  if (style === 'dashed') return [width * 3, width * 2];
+  if (style === 'dotted') return [0, width * 2];
+  return [0, 0];
+}
+
+/* The same pair as one dash-array string, for a preview line. */
 export function dashArray(width: number, style: StrokeStyle): string {
-  if (style === 'dashed') return `${width * 3} ${width * 2}`;
-  if (style === 'dotted') return `0 ${width * 2}`;
-  return 'none';
+  const [a, b] = dashPair(width, style);
+  return a === 0 && b === 0 ? 'none' : `${a} ${b}`;
 }
 
 export const PALETTE: readonly string[] = ['1', '2', '3', '4', '5', '6'];

@@ -2,23 +2,26 @@
  * note to the canvases it sits on. The cache lists a canvas as a link
  * source once it holds a file card or a link (1.13.7 indexes canvas files
  * through the core Canvas plugin), which is exactly the set with anything
- * to index; the vault is never enumerated. Built once the layout is ready,
- * kept fresh from the vault's own events for canvas files (debounced), and
- * rebuilt once when the metadata cache reports the vault resolved (the
- * cache may still be empty at layout-ready). Views subscribe and re-render
- * on every change. */
+ * to index; the vault is never enumerated. Core indexes one canvas per
+ * idle callback at startup and reports each through the cache's `resolve`
+ * event, so the index reads a canvas when it resolves, reads the whole
+ * known set at layout-ready and once more when the cache reports
+ * `resolved`, and never clears what it has: a canvas core had not reached
+ * yet is added when it arrives, not dropped by a sweep. The vault's own
+ * events for canvas files keep it fresh (debounced). Views subscribe and
+ * re-render on every change. */
 import { TFile, debounce } from 'obsidian';
 import type { App } from 'obsidian';
 import type { CanvasPlacements, Placement } from './parse';
 import { parseCanvasFile } from './parse';
+import { IndexStore } from './store';
 
 export const CANVAS_EXTENSION = 'canvas';
 
 export type Unsubscribe = () => void;
 
 export class CanvasIndex {
-  private readonly byCanvas = new Map<string, CanvasPlacements>();
-  private byNote = new Map<string, Placement[]>();
+  private readonly store = new IndexStore();
   private readonly listeners = new Set<() => void>();
   private readonly pending = new Set<string>();
   private readonly flush = debounce(() => void this.flushPending(), 300, true);
@@ -45,8 +48,9 @@ export class CanvasIndex {
     return out;
   }
 
-  /* Reads every canvas file the cache names. Safe to call again; the
-     result replaces the old map in one step. */
+  /* Reads every canvas file the cache names now and merges the result;
+     nothing already indexed is dropped (a sweep that cleared lost every
+     canvas core had not reached yet). Safe to call again. */
   async rebuild(): Promise<void> {
     const files = this.knownCanvases();
     const next = new Map<string, CanvasPlacements>();
@@ -54,11 +58,15 @@ export class CanvasIndex {
       const placements = await this.read(file);
       if (placements) next.set(file.path, placements);
     }
-    this.byCanvas.clear();
-    for (const [path, placements] of next) this.byCanvas.set(path, placements);
+    this.store.setMany(next);
+    /* A sweep can only add or correct; the one thing it drops is a path
+       that is no longer a canvas file. */
+    for (const path of this.store.paths()) {
+      if (!this.isCanvasFile(this.app.vault.getFileByPath(path))) this.store.remove(path);
+    }
     this.built = true;
-    this.recompute();
-    this.log(`index rebuilt: ${files.length} canvases, ${this.byNote.size} notes placed`);
+    this.notify();
+    this.log(`index swept: ${files.length} canvases named by the cache, ${this.store.size} indexed`);
   }
 
   /* A canvas file changed or appeared; read it again soon. */
@@ -69,25 +77,22 @@ export class CanvasIndex {
 
   remove(path: string): void {
     this.pending.delete(path);
-    if (this.byCanvas.delete(path)) this.recompute();
+    if (this.store.remove(path)) this.notify();
   }
 
   rename(oldPath: string, file: TFile): void {
     this.pending.delete(oldPath);
-    this.byCanvas.delete(oldPath);
+    if (this.store.remove(oldPath)) this.notify();
     this.touch(file.path);
-    this.recompute();
   }
 
   placementsFor(notePath: string): Placement[] {
-    return this.byNote.get(notePath) ?? [];
+    return this.store.placementsFor(notePath);
   }
 
   /* The distinct canvases a note is on, in vault order. */
   canvasesFor(notePath: string): string[] {
-    const seen = new Set<string>();
-    for (const p of this.placementsFor(notePath)) seen.add(p.canvasPath);
-    return [...seen];
+    return this.store.canvasesFor(notePath);
   }
 
   /* At unload: a pending flush must not read a file and call listeners
@@ -116,37 +121,22 @@ export class CanvasIndex {
   private async flushPending(): Promise<void> {
     const paths = [...this.pending];
     this.pending.clear();
-    let changed = false;
+    const next = new Map<string, CanvasPlacements>();
+    let removed = false;
     for (const path of paths) {
       const file = this.app.vault.getFileByPath(path);
-      if (!this.isCanvasFile(file)) {
-        changed = this.byCanvas.delete(path) || changed;
-        continue;
-      }
-      const placements = await this.read(file);
-      if (placements) this.byCanvas.set(path, placements);
-      else this.byCanvas.delete(path);
-      changed = true;
+      const placements = this.isCanvasFile(file) ? await this.read(file) : null;
+      if (placements) next.set(path, placements);
+      else removed = this.store.remove(path) || removed;
     }
-    if (changed) {
-      this.recompute();
+    if (next.size > 0) this.store.setMany(next);
+    if (next.size > 0 || removed) {
+      this.notify();
       this.log(`index updated: ${paths.length} canvas file(s)`);
     }
   }
 
-  private recompute(): void {
-    const next = new Map<string, Placement[]>();
-    const canvases = [...this.byCanvas.keys()].sort((a, b) => a.localeCompare(b));
-    for (const canvasPath of canvases) {
-      const placements = this.byCanvas.get(canvasPath);
-      if (!placements) continue;
-      for (const [notePath, list] of placements) {
-        const existing = next.get(notePath) ?? [];
-        existing.push(...list);
-        next.set(notePath, existing);
-      }
-    }
-    this.byNote = next;
+  private notify(): void {
     for (const listener of this.listeners) listener();
   }
 }

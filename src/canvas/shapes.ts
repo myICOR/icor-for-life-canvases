@@ -7,8 +7,9 @@
  * see shapeModel.ts) through the node's unknown keys and saved by the
  * canvas, so undo, redo, copy and paste carry it. Rendering is an
  * attribute on the card's element plus CSS variables; the stylesheet
- * does the rest. The five clipped shapes get an SVG outline drawn over
- * the card where the clip would hide the border. Every card is applied
+ * does the rest: the rectangle and the rounded rectangle as a CSS box
+ * behind the content, every other shape as an SVG layer that is the
+ * card's first child. Every card is applied
  * once when it is added and again after every `setData` (a load, an
  * undo, a paste), through an instance wrap on the node. */
 import { Menu, Notice, debounce, setIcon, setTooltip } from 'obsidian';
@@ -18,7 +19,7 @@ import { around, hasUnknownData, isEdge, isTextNode, nodeColor, onNodeMenu } fro
 import type { Canvas, CanvasNode } from './internals';
 import type { NodeAddHook } from './nodeHook';
 import type { SelectionMenuHook } from './selectionMenu';
-import { PALETTE, SHAPES, SHAPE_LABELS, colorLabel, colorValue, isHexColor, STROKE_STYLES, STROKE_WIDTHS, SVG_SHAPES, GEOMETRY, dashArray, fitSize, fitSizeByArea, legacyStroke, prefersDarkText, readShape, relativeLuminance, withShape, withoutLegacyStroke } from './shapeModel';
+import { PALETTE, SHAPES, SHAPE_LABELS, colorLabel, colorValue, isHexColor, STROKE_STYLES, STROKE_WIDTHS, SVG_SHAPES, GEOMETRY, dashArray, dashPair, fitSize, fitSizeByArea, legacyStroke, prefersDarkText, readShape, relativeLuminance, withShape, withoutLegacyStroke } from './shapeModel';
 import type { StrokeStyle } from './shapeModel';
 import type { Shape, ShapeColor, ShapeStyle } from './shapeModel';
 
@@ -27,7 +28,8 @@ const FILL_VAR = '--icor-canvases-fill';
 const TEXT_VAR = '--icor-canvases-text';
 const STROKE_WIDTH_VAR = '--icor-canvases-stroke-width';
 const STROKE_STYLE_VAR = '--icor-canvases-stroke-style';
-const DASH_VAR = '--icor-canvases-dash';
+const DASH_A_VAR = '--icor-canvases-dash-a';
+const DASH_B_VAR = '--icor-canvases-dash-b';
 const PALETTE_VAR = (n: string): string => `--canvas-color-${n}`;
 const LAYER_CLASS = 'icor-canvases-shape-layer';
 /* The bounding frame and its four corner handles on a shaped card: the
@@ -246,11 +248,14 @@ export class NodeShapes {
     }
     this.setVar(el, FILL_VAR, colorValue(style.fill));
     this.setVar(el, TEXT_VAR, colorValue(style.text));
-    /* Outline thickness and dash, screen-constant: the box shapes take
-       them as a border, the cut shapes as the polygon's stroke. */
+    /* Outline thickness and dash as numbers; the stylesheet applies the
+       zoom multiplier to both families (the box shapes' border, the
+       drawn shapes' stroke) the way core scales its labels. */
     this.setVar(el, STROKE_WIDTH_VAR, shape ? String(style.strokeWidth) : '');
     this.setVar(el, STROKE_STYLE_VAR, shape && style.strokeStyle !== 'solid' ? style.strokeStyle : '');
-    this.setVar(el, DASH_VAR, shape ? dashArray(style.strokeWidth, style.strokeStyle) : '');
+    const [dashA, dashB] = dashPair(style.strokeWidth, style.strokeStyle);
+    this.setVar(el, DASH_A_VAR, shape ? String(dashA) : '');
+    this.setVar(el, DASH_B_VAR, shape ? String(dashB) : '');
     /* The colour rules apply only to cards that carry a colour, so every
        other card keeps the canvas's own look. */
     el.toggleClass('icor-canvases-filled', style.fill !== '');

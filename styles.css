@@ -682,9 +682,11 @@
   border-radius: var(--radius-xl);
 }
 
-/* The drawn shapes: the SVG layer behind the container. The stroke is
-   screen-constant (non-scaling) in the outline's width and dash, the
-   fill the card's fill colour or the theme's card background. */
+/* The drawn shapes: the SVG layer behind the container. The stroke's
+   width and dash follow the zoom multiplier the way the box shapes'
+   border does (non-scaling-stroke cancels the box stretch, not core's
+   zoom transform); the fill is the card's fill colour or the theme's
+   card background. */
 .icor-canvases-shape-layer {
   position: absolute;
   left: 0;
@@ -699,8 +701,8 @@
 .icor-canvases-shape-preview-svg > * {
   fill: var(--icor-canvases-fill, var(--background-primary));
   stroke: var(--canvas-color);
-  stroke-width: var(--icor-canvases-stroke-width, 2);
-  stroke-dasharray: var(--icor-canvases-dash, none);
+  stroke-width: calc(var(--icor-canvases-stroke-width, 2) * var(--zoom-multiplier, 1));
+  stroke-dasharray: calc(var(--icor-canvases-dash-a, 0) * var(--zoom-multiplier, 1)) calc(var(--icor-canvases-dash-b, 0) * var(--zoom-multiplier, 1));
   stroke-linejoin: round;
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
@@ -1062,6 +1064,15 @@ html.icor-canvases-in-shape .cm-scroller {
   --canvas-color: var(--text-muted);
   --icor-canvases-fill: var(--background-primary);
   --icor-canvases-stroke-width: 1;
+  --zoom-multiplier: 1;
+}
+
+/* The circle previews round, on the preview's height. */
+.icor-canvases-shape-preview[data-icor-canvases-shape="circle"] > .icor-canvases-shape-preview-svg {
+  position: absolute;
+  left: 50%;
+  width: var(--size-4-6);
+  transform: translateX(-50%);
 }
 
 /* The colour flyouts: the card's own colour, and none. */

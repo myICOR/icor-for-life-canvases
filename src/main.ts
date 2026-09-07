@@ -247,9 +247,15 @@ export default class CanvasesPlugin extends Plugin {
         else if (oldPath.endsWith('.canvas')) this.index.remove(oldPath);
       }),
     );
-    /* The first resolve after startup means every file is indexed; the
-       canvases are read again then, in case the vault was still loading
-       when the layout was ready. */
+    /* Core indexes one canvas per idle callback at startup and reports
+       each through `resolve`; the index reads it then, so no canvas waits
+       for a sweep. `resolved` fires each time the resolver drains; the
+       first one runs a final, non-clearing sweep. */
+    this.registerEvent(
+      metadataCache.on('resolve', (file) => {
+        if (this.index.isCanvasFile(file)) this.index.touch(file.path);
+      }),
+    );
     const once = metadataCache.on('resolved', () => {
       metadataCache.offref(once);
       void this.index.rebuild();
