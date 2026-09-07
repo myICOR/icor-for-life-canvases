@@ -3,6 +3,7 @@
  * belong here. */
 export * from '../src/canvas/format';
 export * from '../src/canvas/geometry';
+export * from '../src/canvas/shapeModel';
 export * from '../src/canvas/inkModel';
 export * from '../src/index/parse';
 export * from '../src/settings/model';

@@ -4,13 +4,14 @@
  * right that lists the others. One root element per card, injected once
  * into the card's own element and never twice; the card's element survives
  * the canvas detaching it off screen, so the toolbar survives with it.
- * Cards that arrive later come through the canvas's `addNode`, wrapped
- * for that; the index feeds the pill and re-renders it on every change. */
+ * Cards that arrive later come through the shared `addNode` hook; the
+ * index feeds the pill and re-renders it on every change. */
 import { Keymap, Menu, Notice, setIcon, setTooltip } from 'obsidian';
 import type { App } from 'obsidian';
-import { around, isFileNode, nodeFile } from './internals';
+import { isFileNode, nodeFile } from './internals';
 import type { Canvas, CanvasNode } from './internals';
 import { openCanvasAtNode } from './navigate';
+import type { NodeAddHook } from './nodeHook';
 import type { CanvasIndex, Unsubscribe } from '../index/CanvasIndex';
 import { basename } from '../index/parse';
 import { openInNewTab, openInRightSidebar } from '../open';
@@ -26,24 +27,20 @@ const ROOT_CLASS = 'icor-canvases-node';
 const NO_FILE = 'This card points to a note that does not exist.';
 
 export class NodeToolbars {
-  private restoreAddNode: (() => void) | null = null;
+  private unhook: (() => void) | null = null;
   private unsubscribe: Unsubscribe | null = null;
   private readonly abort = new AbortController();
   private readonly roots = new Map<CanvasNode, HTMLElement>();
   private disposed = false;
 
-  constructor(private readonly canvas: Canvas, private readonly host: ToolbarHost) {}
+  constructor(
+    private readonly canvas: Canvas,
+    private readonly nodes: NodeAddHook,
+    private readonly host: ToolbarHost,
+  ) {}
 
   attach(): void {
-    const decorate = (node: CanvasNode): void => this.decorate(node);
-    this.restoreAddNode = around(this.canvas, 'addNode', (original) => {
-      return function (this: Canvas, node) {
-        original.call(this, node);
-        /* The node's data (its file) is set right after `addNode` in the
-           same loop; a microtask sees it. */
-        queueMicrotask(() => decorate(node));
-      };
-    });
+    this.unhook = this.nodes.on((node) => this.decorate(node));
     this.unsubscribe = this.host.index.subscribe(() => this.refreshAll());
     this.refreshAll();
   }
@@ -76,7 +73,7 @@ export class NodeToolbars {
     this.disposed = true;
     this.abort.abort();
     this.unsubscribe?.();
-    this.restoreAddNode?.();
+    this.unhook?.();
     for (const node of [...this.roots.keys()]) this.strip(node);
   }
 

@@ -83,8 +83,17 @@
   max-width: none;
 }
 
-/* The breadcrumb of a nested canvas: top left of the wrapper, untransformed,
-   above the cards and under nothing. */
+/* The controls column on the left edge (the toolbar side), by setting.
+   Scoped to the wrapper class the plugin adds, so unloading the plugin
+   restores the canvas's own layout; the top offset and spacing are the
+   canvas's own. */
+.icor-canvases-wrapper.icor-canvases-controls-left .canvas-controls {
+  inset-inline-end: auto;
+  inset-inline-start: var(--size-4-2);
+}
+
+/* The breadcrumb of a nested canvas: the top corner away from the
+   controls column, untransformed, above the cards and under nothing. */
 .icor-canvases-breadcrumb {
   position: absolute;
   top: var(--size-4-2);
@@ -93,6 +102,12 @@
   flex-wrap: wrap;
   gap: var(--size-2-2);
   z-index: var(--layer-cover);
+}
+
+.icor-canvases-wrapper.icor-canvases-controls-left .icor-canvases-breadcrumb {
+  left: auto;
+  right: var(--size-4-2);
+  justify-content: flex-end;
 }
 
 .icor-canvases-breadcrumb-item {
@@ -136,6 +151,10 @@
 
 .canvas-submenu.icor-canvases-flyout-left {
   right: calc(var(--icor-canvases-flyout-right) + var(--size-4-1));
+}
+
+.canvas-submenu.icor-canvases-flyout-right {
+  left: calc(var(--icor-canvases-flyout-left) + var(--size-4-1));
 }
 
 .canvas-submenu.icor-canvases-flyout-below {
@@ -480,4 +499,199 @@
 
 .icor-canvases-footer .icor-canvases-list {
   padding-top: var(--size-2-2);
+}
+
+/* Shapes on a text card. The attribute sits on the card's element; the
+   container is rounded or cut, and padded so the text stays inside the
+   visible area and centred. A preview in the shape flyout carries the
+   same attribute on a small box. The five cut shapes lose the container's
+   border to the clip and get an SVG outline over the card instead. */
+.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape] > .canvas-node-container {
+  justify-content: center;
+  text-align: center;
+}
+
+.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="rectangle"] > .canvas-node-container,
+.icor-canvases-shape-preview[data-icor-canvases-shape="rectangle"] > .icor-canvases-shape-preview-box {
+  border-radius: 0;
+}
+
+.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="rounded"] > .canvas-node-container,
+.icor-canvases-shape-preview[data-icor-canvases-shape="rounded"] > .icor-canvases-shape-preview-box {
+  border-radius: var(--radius-xl);
+}
+
+.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="ellipse"] > .canvas-node-container,
+.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="circle"] > .canvas-node-container,
+.icor-canvases-shape-preview[data-icor-canvases-shape="ellipse"] > .icor-canvases-shape-preview-box,
+.icor-canvases-shape-preview[data-icor-canvases-shape="circle"] > .icor-canvases-shape-preview-box {
+  border-radius: 50%;
+}
+
+.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="ellipse"] > .canvas-node-container {
+  padding: 8% 12%;
+}
+
+/* A circle is drawn on the largest square that fits the card, centred. */
+.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="circle"] > .canvas-node-container {
+  width: calc(min(var(--canvas-node-width), var(--canvas-node-height)));
+  height: calc(min(var(--canvas-node-width), var(--canvas-node-height)));
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  padding: 15%;
+}
+
+.icor-canvases-shape-preview[data-icor-canvases-shape="circle"] > .icor-canvases-shape-preview-box {
+  width: calc(min(100%, var(--size-4-6)));
+  height: calc(min(100%, var(--size-4-6)));
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="diamond"] > .canvas-node-container,
+.icor-canvases-shape-preview[data-icor-canvases-shape="diamond"] > .icor-canvases-shape-preview-box {
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="diamond"] > .canvas-node-container {
+  padding: 24% 20%;
+}
+
+.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="triangle"] > .canvas-node-container,
+.icor-canvases-shape-preview[data-icor-canvases-shape="triangle"] > .icor-canvases-shape-preview-box {
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="triangle"] > .canvas-node-container {
+  padding: 45% 22% 6%;
+}
+
+.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="parallelogram"] > .canvas-node-container,
+.icor-canvases-shape-preview[data-icor-canvases-shape="parallelogram"] > .icor-canvases-shape-preview-box {
+  clip-path: polygon(20% 0, 100% 0, 80% 100%, 0 100%);
+}
+
+.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="parallelogram"] > .canvas-node-container {
+  padding: 4% 18%;
+}
+
+.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="bubble"] > .canvas-node-container,
+.icor-canvases-shape-preview[data-icor-canvases-shape="bubble"] > .icor-canvases-shape-preview-box {
+  clip-path: polygon(0 0, 100% 0, 100% 75%, 35% 75%, 20% 100%, 22% 75%, 0 75%);
+}
+
+.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="bubble"] > .canvas-node-container {
+  padding: 4% 6% 26%;
+}
+
+.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="star"] > .canvas-node-container,
+.icor-canvases-shape-preview[data-icor-canvases-shape="star"] > .icor-canvases-shape-preview-box {
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="star"] > .canvas-node-container {
+  padding: 34% 26% 22%;
+}
+
+/* The outline over a cut card: one screen pixel and a half at any zoom,
+   the accent while the card is selected, the same as a card's border. */
+.icor-canvases-shape-outline {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.icor-canvases-shape-outline polygon {
+  fill: none;
+  stroke: var(--icor-canvases-stroke, var(--canvas-color));
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.icor-canvases-wrapper .canvas-node.is-selected > .icor-canvases-shape-outline polygon,
+.icor-canvases-wrapper .canvas-node.is-focused > .icor-canvases-shape-outline polygon {
+  stroke: var(--color-accent);
+  stroke-width: 2.5;
+}
+
+/* Outline and fill colours, only on cards that carry one. */
+.icor-canvases-wrapper .canvas-node.icor-canvases-stroked > .canvas-node-container {
+  border-color: var(--icor-canvases-stroke);
+}
+
+.icor-canvases-wrapper .canvas-node.icor-canvases-filled > .canvas-node-container {
+  background-color: var(--icor-canvases-fill);
+}
+
+/* The shape flyout: a small card per shape. */
+.icor-canvases-shape-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-4-10);
+  height: var(--size-4-9);
+  border-radius: var(--radius-s);
+  cursor: var(--cursor);
+}
+
+.icor-canvases-shape-option:hover,
+.icor-canvases-shape-option:focus-visible {
+  background-color: var(--background-modifier-hover);
+}
+
+.icor-canvases-shape-option.is-active {
+  background-color: var(--background-modifier-active-hover);
+}
+
+.icor-canvases-shape-preview {
+  position: relative;
+  width: var(--size-4-8);
+  height: var(--size-4-6);
+}
+
+.icor-canvases-shape-preview-box {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  border: var(--border-width) solid var(--text-muted);
+  border-radius: var(--radius-s);
+  background-color: var(--background-primary);
+}
+
+.icor-canvases-shape-preview .icor-canvases-shape-outline polygon {
+  stroke: var(--text-muted);
+}
+
+/* The colour flyouts: the card's own colour, and none. */
+.icor-canvases-swatch {
+  position: relative;
+}
+
+.icor-canvases-swatch-card {
+  --canvas-color: var(--background-modifier-border);
+}
+
+.icor-canvases-swatch-none {
+  --canvas-color: var(--background-primary);
+}
+
+.icor-canvases-swatch-none::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 10%;
+  width: 0;
+  height: 80%;
+  border-left: var(--border-width) solid var(--text-faint);
+  transform: rotate(45deg);
 }

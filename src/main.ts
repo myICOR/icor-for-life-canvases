@@ -8,6 +8,7 @@
  * adapter (src/canvas/internals.ts). */
 import { Notice, Plugin, TFile } from 'obsidian';
 import { CanvasRegistry } from './canvas/registry';
+import { registerNodeMenu } from './canvas/shapes';
 import type { Tool } from './canvas/tools';
 import { VIEW_TYPE } from './constants';
 import { CanvasIndex } from './index/CanvasIndex';
@@ -41,6 +42,8 @@ export default class CanvasesPlugin extends Plugin {
     this.registerCommands();
     this.registerIndexEvents();
     this.registerNodeMenu();
+    /* The private node-menu event, for the Shape item on a text card. */
+    this.registerEvent(registerNodeMenu(this.app, (node) => this.registry.shapesFor(node)));
 
     const sweep = (): void => {
       this.registry.sweep();

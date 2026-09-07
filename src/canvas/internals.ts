@@ -6,7 +6,7 @@
  * missing. Nothing outside this file names a private member without a
  * guard having passed first. */
 import { TFile } from 'obsidian';
-import type { Menu, View } from 'obsidian';
+import type { App, EventRef, Menu, View } from 'obsidian';
 import type { CanvasEdgeData, CanvasFileData, CanvasNodeData } from './format';
 import { degrade } from '../log';
 
@@ -24,8 +24,12 @@ export interface CanvasNode {
   width: number;
   height: number;
   nodeEl: HTMLElement;
+  /* The keys of the node's data the canvas does not know; spread back
+     into `getData()`, replaced on every `setData`. */
+  unknownData: Record<string, unknown>;
   getBBox(): BBox;
   getData(): CanvasNodeData;
+  setData(data: CanvasNodeData): void;
 }
 
 /* A file node carries `file` (a TFile once resolved, null before) and the
@@ -265,7 +269,29 @@ export function around<T extends object, K extends keyof T & string>(target: T, 
   };
 }
 
-/* Not used, on purpose: the bundle also triggers `canvas:node-menu`,
-   `canvas:edge-menu` and `canvas:selection-menu`, none of them in
-   obsidian.d.ts. A note card's menu fires the public `file-menu` event with
-   source 'canvas-menu' as well, which is what src/main.ts listens to. */
+/* A card carries its unknown keys in `unknownData` and the canvas replaces
+   that object on every `setData`; a feature that writes there must be
+   sure of both. */
+export function hasUnknownData(node: CanvasNode | null | undefined): boolean {
+  if (!node) return false;
+  const n = node as Partial<CanvasNode>;
+  return typeof n.unknownData === 'object' && n.unknownData !== null && typeof n.setData === 'function';
+}
+
+/* The private `canvas:node-menu` event: fired from a card's context menu
+   with the menu and the node (1.13.7). A note card fires the public
+   `file-menu` too, which src/main.ts uses for its items; a text card
+   fires only this one. The name is not in the typings, so the
+   registration narrows through the one typed overload with the same
+   handler shape. */
+export const NODE_MENU_EVENT = 'canvas:node-menu';
+
+export function onNodeMenu(app: App, handler: (menu: Menu, node: CanvasNode) => void): EventRef {
+  const name = NODE_MENU_EVENT as 'file-menu';
+  return app.workspace.on(name, (menu, node) => {
+    handler(menu, node as unknown as CanvasNode);
+  });
+}
+
+/* Known and unused: `canvas:edge-menu` and `canvas:selection-menu`, also
+   not in obsidian.d.ts. */
