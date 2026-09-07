@@ -26,6 +26,8 @@ export const CONTROLS_SIDES: readonly ControlsSide[] = ['left', 'right'];
 export interface CanvasesSettings {
   modifier: OpenModifier;
   controlsSide: ControlsSide;
+  /* The minimap in the bottom right corner of every canvas. */
+  minimap: boolean;
   footer: boolean;
   toolbar: boolean;
   penColor: PenColorSetting;
@@ -38,6 +40,7 @@ export interface CanvasesSettings {
 export const DEFAULT_SETTINGS: CanvasesSettings = {
   modifier: 'mod',
   controlsSide: 'left',
+  minimap: true,
   footer: true,
   toolbar: true,
   penColor: 'default',
@@ -59,6 +62,7 @@ export function normaliseSettings(raw: unknown): CanvasesSettings {
   return {
     modifier: oneOf(r.modifier, OPEN_MODIFIERS, DEFAULT_SETTINGS.modifier),
     controlsSide: oneOf(r.controlsSide, CONTROLS_SIDES, DEFAULT_SETTINGS.controlsSide),
+    minimap: bool(r.minimap, DEFAULT_SETTINGS.minimap),
     footer: bool(r.footer, DEFAULT_SETTINGS.footer),
     toolbar: bool(r.toolbar, DEFAULT_SETTINGS.toolbar),
     penColor: oneOf(r.penColor, PEN_COLOR_SETTINGS, DEFAULT_SETTINGS.penColor),

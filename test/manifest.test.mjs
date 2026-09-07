@@ -90,7 +90,7 @@ test('every named import from obsidian exists at minAppVersion', () => {
 test('commands: bare ids, sentence case, icons, no default hotkeys', () => {
   const src = read('src/main.ts');
   const ids = [...src.matchAll(/id: '([^']+)'/g)].map((m) => m[1]);
-  assert.deepEqual(ids, ['toggle-drawing-mode', 'select-tool', 'hand-tool', 'eraser-tool', 'group-selection', 'undo-last-stroke', 'open-canvases-panel']);
+  assert.deepEqual(ids, ['toggle-drawing-mode', 'select-tool', 'hand-tool', 'eraser-tool', 'zoom-to-fit', 'zoom-to-100', 'toggle-minimap', 'group-selection', 'undo-last-stroke', 'open-canvases-panel']);
   for (const id of ids) assert.doesNotMatch(id, /icor|canvases:|:/, `${id} carries a prefix`);
   const names = [...src.matchAll(/name: '([^']+)'/g)].map((m) => m[1]);
   assert.equal(names.length, ids.length);
@@ -108,9 +108,10 @@ test('every setting has exactly one row and a default the normaliser keeps', () 
   assert.equal(new Set(keys).size, keys.length, 'a setting with two rows');
   assert.deepEqual(normaliseSettings(DEFAULT_SETTINGS), DEFAULT_SETTINGS);
   assert.deepEqual(normaliseSettings({ modifier: 'shift', penColor: 'pink', penWidth: 9, footer: 'yes' }), DEFAULT_SETTINGS, 'bad values fall back');
-  assert.deepEqual(normaliseSettings({ modifier: 'alt', controlsSide: 'right', penColor: '3', penWidth: 'thick', footer: false, toolbar: false, penDraws: false, debug: true }), {
+  assert.deepEqual(normaliseSettings({ modifier: 'alt', controlsSide: 'right', minimap: false, penColor: '3', penWidth: 'thick', footer: false, toolbar: false, penDraws: false, debug: true }), {
     modifier: 'alt',
     controlsSide: 'right',
+    minimap: false,
     penColor: '3',
     penWidth: 'thick',
     footer: false,

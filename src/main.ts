@@ -34,7 +34,7 @@ export default class CanvasesPlugin extends Plugin {
     const log = (message: string): void => this.log(message);
     const settings = (): CanvasesSettings => this.settings;
     this.index = new CanvasIndex(this.app, log);
-    this.registry = new CanvasRegistry({ app: this.app, index: this.index, settings, log });
+    this.registry = new CanvasRegistry({ app: this.app, index: this.index, settings, toggleMinimap: () => void this.toggleMinimap(), log });
     this.footers = new Footers({ app: this.app, index: this.index, enabled: () => this.settings.footer, log });
     this.backlinks = new BacklinksSections({ app: this.app, index: this.index, log });
 
@@ -83,6 +83,14 @@ export default class CanvasesPlugin extends Plugin {
 
   async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
+  }
+
+  /* The minimap setting, flipped from the zoom flyout, the M key or the
+     command; every open canvas follows. */
+  async toggleMinimap(): Promise<void> {
+    this.settings = { ...this.settings, minimap: !this.settings.minimap };
+    await this.saveSettings();
+    this.applySettings();
   }
 
   /* After a settings change: every open canvas and note follows. */
@@ -135,6 +143,34 @@ export default class CanvasesPlugin extends Plugin {
       name: 'Eraser tool',
       icon: 'eraser',
       checkCallback: (checking) => setTool(checking, 'eraser'),
+    });
+    this.addCommand({
+      id: 'zoom-to-fit',
+      name: 'Zoom to fit',
+      icon: 'maximize',
+      checkCallback: (checking) => {
+        const binding = this.registry.active();
+        if (!binding?.layout) return false;
+        if (!checking) binding.canvas.zoomToFit();
+        return true;
+      },
+    });
+    this.addCommand({
+      id: 'zoom-to-100',
+      name: 'Zoom to 100%',
+      icon: 'scan',
+      checkCallback: (checking) => {
+        const binding = this.registry.active();
+        if (!binding?.layout) return false;
+        if (!checking) binding.layout.zoomTo(100);
+        return true;
+      },
+    });
+    this.addCommand({
+      id: 'toggle-minimap',
+      name: 'Toggle minimap',
+      icon: 'map',
+      callback: () => void this.toggleMinimap(),
     });
     this.addCommand({
       id: 'group-selection',

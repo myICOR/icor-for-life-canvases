@@ -53,6 +53,13 @@ export const SETTING_ROWS: readonly SettingRow[] = [
   {
     type: 'toggle',
     group: 'Canvas',
+    key: 'minimap',
+    name: 'Minimap',
+    desc: 'A small map of the whole canvas in the bottom right corner, above the zoom bar: every card in its colour, the current view as a rectangle. Click or drag on it to move the view; scroll on it to zoom. The M key while the canvas has focus toggles it too.',
+  },
+  {
+    type: 'toggle',
+    group: 'Canvas',
     key: 'toolbar',
     name: 'Toolbar on note cards',
     desc: 'Two buttons on every note card, shown while the pointer is over it or the card is selected: open the note in a new tab, open it in the right sidebar. A note that sits on more than one canvas also gets a pill in the top right corner that lists the other canvases.',

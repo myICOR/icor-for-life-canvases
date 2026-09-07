@@ -45,6 +45,8 @@ export interface ToolHost {
   controls: boolean;
   /* Which edge the column sits on; tooltips open away from it. */
   side: () => 'left' | 'right';
+  /* The M key. */
+  toggleMinimap: () => void;
   log: (message: string) => void;
 }
 
@@ -177,13 +179,15 @@ export class ToolControls {
 
   private onKeydown(evt: KeyboardEvent): void {
     if (evt.repeat || evt.metaKey || evt.ctrlKey || evt.altKey || Flyout.isOpen) return;
-    const tool = TOOL_KEYS[evt.key.toLowerCase()];
-    if (!tool) return;
+    const key = evt.key.toLowerCase();
+    const tool = TOOL_KEYS[key];
+    if (!tool && key !== 'm') return;
     const target = targetElement(evt.target);
     if (target?.closest('[contenteditable="true"], input, textarea, .cm-editor, .canvas-node.is-editing')) return;
     evt.preventDefault();
     evt.stopPropagation();
-    this.setTool(tool);
+    if (tool) this.setTool(tool);
+    else this.host.toggleMinimap();
   }
 
   private ensureHand(): void {

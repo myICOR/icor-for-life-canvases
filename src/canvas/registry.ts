@@ -7,6 +7,8 @@
 import { Platform } from 'obsidian';
 import type { App } from 'obsidian';
 import { InkLayer, INK_MEMBERS } from './ink';
+import { ColumnLayout } from './layout';
+import { Minimap } from './minimap';
 import { asCanvasView, requireCanvas } from './internals';
 import type { Canvas, CanvasNode, CanvasView } from './internals';
 import { NestedCanvases } from './nested';
@@ -24,6 +26,8 @@ export interface RegistryHost {
   app: App;
   index: CanvasIndex;
   settings(): CanvasesSettings;
+  /* Flips the minimap setting and applies it everywhere. */
+  toggleMinimap(): void;
   log(message: string): void;
 }
 
@@ -35,6 +39,8 @@ export interface CanvasBinding {
   toolbars: NodeToolbars | null;
   nested: NestedCanvases | null;
   shapes: NodeShapes | null;
+  layout: ColumnLayout | null;
+  minimap: Minimap | null;
   selection: SelectionMenuHook | null;
   nodeHook: NodeAddHook | null;
   disposers: (() => void)[];
@@ -71,9 +77,23 @@ export class CanvasRegistry {
     for (const binding of this.bindings.values()) binding.nested?.render();
   }
 
+  private showMinimap(binding: CanvasBinding): void {
+    if (binding.minimap || !binding.nodeHook) return;
+    if (!requireCanvas(binding.canvas, ['getViewportBBox', 'panTo', 'zoomBy', 'requestFrame', 'markMoved', 'markDirty', 'removeNode'], 'Minimap')) return;
+    binding.minimap = new Minimap(binding.canvas, binding.nodeHook, { log: (m) => this.host.log(m) });
+    binding.minimap.attach();
+  }
+
+  private hideMinimap(binding: CanvasBinding): void {
+    binding.minimap?.dispose();
+    binding.minimap = null;
+  }
+
   applySettings(): void {
     const s = this.host.settings();
     for (const binding of this.bindings.values()) {
+      if (s.minimap) this.showMinimap(binding);
+      else this.hideMinimap(binding);
       binding.canvas.wrapperEl.toggleClass('icor-canvases-controls-left', s.controlsSide === 'left');
       binding.ink?.applyDefaults(penColorOf(s.penColor), s.penWidth);
       binding.tools?.reflect();
@@ -89,7 +109,7 @@ export class CanvasRegistry {
     const host = this.host;
     const { app, index } = host;
     const canvas = view.canvas;
-    const binding: CanvasBinding = { view, canvas, ink: null, tools: null, toolbars: null, nested: null, shapes: null, selection: null, nodeHook: null, disposers: [] };
+    const binding: CanvasBinding = { view, canvas, ink: null, tools: null, toolbars: null, nested: null, shapes: null, layout: null, minimap: null, selection: null, nodeHook: null, disposers: [] };
     const s = host.settings();
     /* The plugin's own class on the wrapper scopes its stylesheet rules
        that reach a core element under it (the group label). */
@@ -108,7 +128,7 @@ export class CanvasRegistry {
       });
       binding.ink.attach();
       if (requireCanvas(canvas, ['wrapperEl', 'posFromEvt', 'panBy', 'selection', 'readonly', 'createGroupNode'], 'Tools')) {
-        const tools = new ToolControls(canvas, binding.ink, { controls: !Platform.isPhone, side: () => host.settings().controlsSide, log: (m) => host.log(m) });
+        const tools = new ToolControls(canvas, binding.ink, { controls: !Platform.isPhone, side: () => host.settings().controlsSide, toggleMinimap: () => host.toggleMinimap(), log: (m) => host.log(m) });
         tools.attach();
         binding.tools = tools;
         binding.selection?.on(() => tools.onSelectionChange());
@@ -127,6 +147,17 @@ export class CanvasRegistry {
       binding.shapes = new NodeShapes(canvas, binding.nodeHook, binding.selection, { app, log: (m) => host.log(m) });
       binding.shapes.attach();
     }
+    /* The column layout and the zoom bar, desktop and tablet only, like
+       the tool group. */
+    if (!Platform.isPhone && requireCanvas(canvas, ['wrapperEl', 'canvasControlsEl', 'cardMenuEl', 'zoomBy', 'zoomToFit', 'markViewportChanged'], 'Column layout')) {
+      binding.layout = new ColumnLayout(canvas, {
+        minimapShown: () => host.settings().minimap,
+        toggleMinimap: () => host.toggleMinimap(),
+        log: (m) => host.log(m),
+      });
+      binding.layout.attach();
+    }
+    if (s.minimap) this.showMinimap(binding);
     if (requireCanvas(canvas, ['view', 'readonly', 'wrapperEl', 'showCreationMenu', 'createFileNode'], 'Nested canvases')) {
       binding.nested = new NestedCanvases(canvas, { app, index, log: (m) => host.log(m) });
       binding.nested.attach();
@@ -145,6 +176,8 @@ export class CanvasRegistry {
     this.bindings.delete(canvas);
     /* Reverse of the bind order, so each wrap is the installed one when
        its undo runs. */
+    this.hideMinimap(binding);
+    binding.layout?.dispose();
     binding.shapes?.dispose();
     binding.toolbars?.dispose();
     binding.nodeHook?.dispose();

@@ -86,7 +86,7 @@ test('every private canvas member is named in internals.ts and guarded before us
     if (f.endsWith('/internals.ts')) continue;
     const text = stripComments(readFileSync(f, 'utf8'));
     assert.doesNotMatch(text, /as any\b/, `${f.slice(repo.length + 1)} casts to any`);
-    assert.doesNotMatch(text, /\bcanvas\.menu\b|canvasControlsEl|nodeInteractionLayer/, `${f.slice(repo.length + 1)} names a private member outside the adapter`);
+    assert.doesNotMatch(text, /\bcanvas\.(menu|canvasControlsEl|cardMenuEl|nodeInteractionLayer)\b/, `${f.slice(repo.length + 1)} reaches a private member outside the adapter`);
   }
 });
 
@@ -97,7 +97,7 @@ test('every class the plugin adds carries the icor-canvases- prefix, apart from 
   const borrowed = new Set([
     'canvas-control-group', 'mod-raised', 'canvas-control-item', 'is-empty', 'is-active', 'is-erasing', 'is-collapsed', 'is-panning',
     'tree-item-self', 'is-clickable', 'tree-item-icon', 'collapse-icon', 'tree-item-inner', 'tree-item-flair-outer', 'tree-item-flair', 'search-result-container', 'search-empty-state',
-    'canvas-submenu', 'canvas-color-picker-item', 'canvas-color-picker-custom', 'clickable-icon',
+    'canvas-submenu', 'canvas-color-picker-item', 'canvas-color-picker-custom', 'clickable-icon', 'icor-canvases-card-menu',
   ]);
   for (const f of sources) {
     const text = readFileSync(f, 'utf8');

@@ -14,8 +14,9 @@
 import { setTooltip } from 'obsidian';
 
 /* `below` for a toolbar button; `side` for a button in the controls column,
-   which opens away from the edge the column sits on. */
-export type FlyoutPlacement = 'below' | 'side';
+   which opens away from the edge the column sits on; `above` for a button
+   on the bottom bar. */
+export type FlyoutPlacement = 'below' | 'side' | 'above';
 
 export interface FlyoutOptions {
   /* The button the flyout hangs on; gets `is-active` while open. */
@@ -58,7 +59,7 @@ export class Flyout {
     const rect = anchor.getBoundingClientRect();
     const win = anchor.win;
     /* The column's edge, read from where the anchor is, not from a setting. */
-    const side = placement === 'below' ? 'below' : rect.left + rect.width / 2 < win.innerWidth / 2 ? 'right' : 'left';
+    const side = placement === 'below' || placement === 'above' ? placement : rect.left + rect.width / 2 < win.innerWidth / 2 ? 'right' : 'left';
     const el = doc.body.createDiv({ cls: ['canvas-submenu', 'icor-canvases-flyout', `icor-canvases-flyout-${side}`], attr: { role: 'group' } });
     if (columns) {
       el.addClass('icor-canvases-flyout-grid');
@@ -74,6 +75,11 @@ export class Flyout {
       el.setCssProps({
         '--icor-canvases-flyout-top': `${rect.top}px`,
         '--icor-canvases-flyout-left': `${rect.right}px`,
+      });
+    } else if (side === 'above') {
+      el.setCssProps({
+        '--icor-canvases-flyout-bottom': `${win.innerHeight - rect.top}px`,
+        '--icor-canvases-flyout-right': `${win.innerWidth - rect.right}px`,
       });
     } else {
       el.setCssProps({
@@ -127,6 +133,18 @@ export class Flyout {
     this.options.anchor.removeClass('is-active');
     this.el.detach();
   }
+}
+
+/* A text row in a list flyout, with an optional shortcut hint. */
+export function flyoutRow(panel: HTMLElement, label: string, hint: string, active: boolean, onChoose: () => void): HTMLElement {
+  const el = flyoutOption(panel, ['icor-canvases-flyout-row'], label, active, onChoose);
+  el.createSpan({ cls: 'icor-canvases-flyout-row-label', text: label });
+  if (hint) el.createSpan({ cls: 'icor-canvases-flyout-row-hint', text: hint });
+  return el;
+}
+
+export function flyoutDivider(panel: HTMLElement): void {
+  panel.createDiv({ cls: 'icor-canvases-flyout-divider' });
 }
 
 /* One option in a flyout: a keyboard-reachable button with a tooltip. */

@@ -78,6 +78,10 @@ export interface Canvas {
   tZoom: number;
   /* The linear zoom factor; `zoom` is its log2. */
   scale?: number;
+  /* The controls column and the bottom card menu, both `div`s in the
+     wrapper; the layout moves the menu into the column. */
+  canvasControlsEl?: HTMLElement;
+  cardMenuEl?: HTMLElement;
   getData(): CanvasFileData;
   setData(data: CanvasFileData): void;
   importData(data: CanvasFileData, clear?: boolean): unknown;
@@ -92,6 +96,17 @@ export interface Canvas {
   deselectAll(): void;
   addNode(node: CanvasNode): void;
   panBy(dx: number, dy: number): void;
+  /* Sets the viewport centre at once (no animation). */
+  panTo(x: number, y: number): void;
+  /* Adds to the target zoom (log2); `center` in viewport-centred screen
+     units, the viewport centre when absent. */
+  zoomBy(delta: number, center?: { x: number; y: number }): void;
+  zoomToFit(): void;
+  getViewportBBox(): BBox;
+  markViewportChanged(): void;
+  markMoved(item: unknown): void;
+  markDirty(item: unknown): void;
+  removeNode(node: CanvasNode): void;
   /* The items of the background context menu (and of the Mod-drag menu),
      built into a public Menu; `size` is set when a box was dragged. */
   showCreationMenu(menu: Menu, pos: { x: number; y: number }, size?: { width: number; height: number }): void;
@@ -149,6 +164,16 @@ const MEMBERS: Record<string, MemberKind> = {
   deselectAll: 'function',
   addNode: 'function',
   panBy: 'function',
+  panTo: 'function',
+  zoomBy: 'function',
+  zoomToFit: 'function',
+  getViewportBBox: 'function',
+  markViewportChanged: 'function',
+  markMoved: 'function',
+  markDirty: 'function',
+  removeNode: 'function',
+  canvasControlsEl: 'element',
+  cardMenuEl: 'element',
   showCreationMenu: 'function',
   createFileNode: 'function',
   createGroupNode: 'function',
@@ -222,6 +247,21 @@ export function isGroupNode(node: CanvasNode | null | undefined): boolean {
   if (!node) return false;
   const n = node as Partial<CanvasNode> & { label?: unknown; bgPath?: unknown };
   return typeof n.label === 'string' && 'bgPath' in n;
+}
+
+/* The controls column and the bottom card menu, guarded. */
+export function controlsColumn(canvas: Canvas): HTMLElement | null {
+  return isHtmlElement(canvas.canvasControlsEl) ? canvas.canvasControlsEl : null;
+}
+
+export function cardMenu(canvas: Canvas): HTMLElement | null {
+  return isHtmlElement(canvas.cardMenuEl) ? canvas.cardMenuEl : null;
+}
+
+/* A node's colour: '' or '1'..'6' or a hex string. */
+export function nodeColor(node: CanvasNode): string {
+  const c = (node as Partial<CanvasNode> & { color?: unknown }).color;
+  return typeof c === 'string' ? c : '';
 }
 
 /* The selection toolbar, when it has the shape the plugin wraps. */

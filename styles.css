@@ -92,6 +92,135 @@
   inset-inline-start: var(--size-4-2);
 }
 
+/* The bottom card menu, moved into the controls column: core's element
+   with its drag handlers, laid out as a group. */
+.icor-canvases-wrapper .icor-canvases-card-menu {
+  position: static;
+  transform: none;
+  flex-direction: column;
+  align-items: stretch;
+  bottom: auto;
+  left: auto;
+  box-shadow: var(--input-shadow);
+}
+
+.icor-canvases-wrapper .icor-canvases-card-menu .canvas-card-menu-button {
+  padding: var(--size-4-2);
+  --icon-size: var(--icon-m);
+  --icon-stroke: var(--icon-m-stroke-width);
+}
+
+/* The emptied zoom group in the column: hidden, its element kept. */
+.icor-canvases-wrapper .icor-canvases-zoom-source {
+  display: none;
+}
+
+/* The zoom bar, bottom right: fit, zoom out, the percentage, zoom in. */
+.icor-canvases-zoom-bar {
+  position: absolute;
+  right: var(--size-4-2);
+  bottom: var(--size-4-2);
+  z-index: var(--layer-cover);
+  font-size: var(--font-ui-medium);
+}
+
+.icor-canvases-zoom-group {
+  flex-direction: row;
+}
+
+.icor-canvases-zoom-percent {
+  font-size: var(--font-ui-small);
+  font-variant-numeric: tabular-nums;
+  min-width: var(--size-4-12);
+  color: var(--text-muted);
+}
+
+.icor-canvases-zoom-percent:hover,
+.icor-canvases-zoom-percent:focus-visible {
+  color: var(--text-normal);
+}
+
+/* The minimap, above the zoom bar. */
+.icor-canvases-minimap {
+  position: absolute;
+  right: var(--size-4-2);
+  bottom: calc(var(--size-4-2) * 2 + var(--size-4-8) + var(--size-4-2));
+  width: calc(var(--size-4-1) * 55);
+  height: calc(var(--size-4-1) * 35);
+  z-index: var(--layer-cover);
+  border-radius: var(--radius-m);
+  border: var(--border-width) solid var(--background-modifier-border);
+  background-color: var(--background-primary);
+  box-shadow: var(--input-shadow);
+  overflow: hidden;
+  cursor: var(--cursor);
+  touch-action: none;
+}
+
+.icor-canvases-minimap-nodes,
+.icor-canvases-minimap-view {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* The percentage flyout: a list, above its button. */
+.canvas-submenu.icor-canvases-flyout-above {
+  bottom: calc(var(--icor-canvases-flyout-bottom) + var(--size-4-1));
+  right: var(--icor-canvases-flyout-right);
+  top: auto;
+}
+
+.icor-canvases-flyout-list {
+  flex-direction: column;
+  align-items: stretch;
+  min-width: calc(var(--size-4-1) * 45);
+}
+
+.icor-canvases-flyout-row {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  padding: var(--size-2-2) var(--size-4-2);
+  border-radius: var(--radius-s);
+  font-size: var(--font-ui-small);
+  cursor: var(--cursor);
+}
+
+.icor-canvases-flyout-row:hover,
+.icor-canvases-flyout-row:focus-visible {
+  background-color: var(--background-modifier-hover);
+}
+
+.icor-canvases-flyout-row.is-active {
+  color: var(--text-accent);
+}
+
+.icor-canvases-flyout-row-label {
+  flex: 1;
+}
+
+.icor-canvases-flyout-row-hint {
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+}
+
+.icor-canvases-flyout-row-icon svg {
+  width: var(--icon-s);
+  height: var(--icon-s);
+  display: block;
+  color: var(--text-muted);
+}
+
+.icor-canvases-flyout-divider {
+  height: var(--border-width);
+  margin: var(--size-2-1) 0;
+  background-color: var(--background-modifier-border);
+}
+
 /* The breadcrumb of a nested canvas: the top corner away from the
    controls column, untransformed, above the cards and under nothing. */
 .icor-canvases-breadcrumb {
