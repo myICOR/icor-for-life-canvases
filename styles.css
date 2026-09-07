@@ -858,15 +858,17 @@ body.icor-canvases-in-shape .cm-scroller {
   color: var(--icor-canvases-text);
 }
 
-/* Obsidian's mono scale is fixed in both themes: --mono-rgb-100 is black,
-   --mono-rgb-0 is white; the accent tokens are not, so they are not used
-   here. */
+/* No Obsidian token is theme-independent here: --text-on-accent and its
+   inverse, and even --mono-rgb-0 and --mono-rgb-100, flip between the
+   light and the dark theme. The contrast colour must not, so it is the
+   one literal in this stylesheet: black on a light fill, white on a
+   dark one. */
 .icor-canvases-wrapper .canvas-node.icor-canvases-contrast-dark > .canvas-node-container {
-  --icor-canvases-contrast: rgb(var(--mono-rgb-100));
+  --icor-canvases-contrast: black;
 }
 
 .icor-canvases-wrapper .canvas-node.icor-canvases-contrast-light > .canvas-node-container {
-  --icor-canvases-contrast: rgb(var(--mono-rgb-0));
+  --icor-canvases-contrast: white;
 }
 
 .icor-canvases-wrapper .canvas-node.icor-canvases-contrast-dark > .canvas-node-container,
