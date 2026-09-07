@@ -131,9 +131,14 @@ export class NodeShapes {
     }
     this.migrate(node);
     const apply = (): void => this.apply(node);
+    /* An undo on a 0.2.0 file replays the parsed entry, which still
+       carries the old outline key; the migration runs after every
+       setData so the outline stays. */
+    const migrate = (): void => this.migrate(node);
     const restoreSetData = around(node, 'setData', (original) => {
       return function (this: CanvasNode, data) {
         original.call(this, data);
+        migrate();
         apply();
       };
     });
