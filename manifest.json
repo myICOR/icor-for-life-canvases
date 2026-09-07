@@ -1,7 +1,7 @@
 {
   "id": "icor-for-life-canvases",
   "name": "ICOR for Life - Canvases",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "minAppVersion": "1.13.0",
   "description": "Draw on a canvas with ink saved in the file, tools to select, pan, draw and erase, shapes and colours for text cards, canvases inside canvases, and under every note the canvases it is on and what it connects to. Part of the ICOR for Life suite.",
   "author": "myICOR",

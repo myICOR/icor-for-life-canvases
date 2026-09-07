@@ -6,6 +6,23 @@ audit every release goes through before its tag.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.3.1] - 2026-09-07
+
+The directory's scan of 0.3.0, before the listing.
+
+### Changed
+- **Shapes are SVG geometry.** Every shape but the rectangle and the
+  rounded rectangle is drawn as one SVG layer behind the card's content
+  (an ellipse, a polygon, a path for the speech bubble), stretched to
+  the card, with the fill and a screen-constant stroke; the stylesheet
+  uses no `clip-path`, which the scanner flags as partially supported.
+  Insets, the frame, the overflow pill and Fit shape to text are as
+  before.
+- **No vault enumeration.** The index discovers canvas files through
+  the metadata cache (`resolvedLinks` names every canvas with a card or
+  a link on it) and the vault's own events, never through
+  `vault.getFiles`. A canvas with nothing on it has nothing to index.
+
 ## [0.3.0] - 2026-09-07
 
 The first public release. 0.1.0 and 0.2.0 below were internal builds
@@ -240,6 +257,7 @@ asks from the same day.
   greps that re-verify it on the next Obsidian release.
 - Whether "Export as image" includes the ink is unverified.
 
+[0.3.1]: docs/releases/0.3.1.md
 [0.3.0]: docs/releases/0.3.0.md
 [0.2.0]: docs/releases/0.2.0.md
 [0.1.0]: docs/releases/0.1.0.md
