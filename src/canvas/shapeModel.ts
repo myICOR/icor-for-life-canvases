@@ -121,3 +121,19 @@ export function colorLabel(color: ShapeColor): string {
   const names: Record<string, string> = { '': 'Default', '1': 'Red', '2': 'Orange', '3': 'Yellow', '4': 'Green', '5': 'Cyan', '6': 'Purple', transparent: 'None' };
   return names[color] ?? color;
 }
+
+/* WCAG relative luminance of an sRGB colour, 0 to 1. */
+export function relativeLuminance(r: number, g: number, b: number): number {
+  const channel = (c: number): number => {
+    const v = c / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+}
+
+/* Dark text on a light fill, light text on a dark one. */
+export const CONTRAST_THRESHOLD = 0.5;
+
+export function prefersDarkText(luminance: number): boolean {
+  return luminance > CONTRAST_THRESHOLD;
+}

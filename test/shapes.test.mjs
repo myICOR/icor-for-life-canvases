@@ -2,7 +2,7 @@
  * never mutates, the defaults that remove their keys, the colour values. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CLIPPED_SHAPES, OUTLINE_POINTS, SHAPES, SHAPE_KEY, STYLE_KEY, colorValue, isShapeColor, legacyStroke, readShape, withShape } from './build/pure.mjs';
+import { CLIPPED_SHAPES, OUTLINE_POINTS, SHAPES, SHAPE_KEY, STYLE_KEY, colorValue, isShapeColor, legacyStroke, prefersDarkText, readShape, relativeLuminance, withShape } from './build/pure.mjs';
 
 test('readShape reads the two keys and falls back to the default for anything else', () => {
   assert.deepEqual(readShape({}), { shape: 'card', fill: '', text: '' });
@@ -55,4 +55,13 @@ test('every clipped shape has an outline polygon; card is the first shape', () =
   assert.equal(SHAPES[0], 'card');
   assert.equal(SHAPES.length, 10);
   for (const shape of CLIPPED_SHAPES) assert.match(OUTLINE_POINTS[shape], /^\d+,\d+( \d+,\d+)+$/, shape);
+});
+
+test('the contrast fallback: dark text on a light fill, light text on a dark one', () => {
+  assert.equal(relativeLuminance(255, 255, 255).toFixed(3), '1.000');
+  assert.equal(relativeLuminance(0, 0, 0), 0);
+  assert.equal(prefersDarkText(relativeLuminance(255, 255, 0)), true, 'yellow');
+  assert.equal(prefersDarkText(relativeLuminance(224, 222, 113)), true, 'the canvas yellow');
+  assert.equal(prefersDarkText(relativeLuminance(30, 30, 30)), false);
+  assert.equal(prefersDarkText(relativeLuminance(255, 91, 46)), false, 'the canvas red is dark enough for light text');
 });

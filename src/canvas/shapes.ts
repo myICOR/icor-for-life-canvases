@@ -18,11 +18,13 @@ import { around, hasUnknownData, isEdge, isTextNode, nodeColor, onNodeMenu } fro
 import type { Canvas, CanvasNode } from './internals';
 import type { NodeAddHook } from './nodeHook';
 import type { SelectionMenuHook } from './selectionMenu';
-import { CLIPPED_SHAPES, OUTLINE_POINTS, PALETTE, SHAPES, SHAPE_LABELS, colorLabel, colorValue, isHexColor, legacyStroke, readShape, withShape } from './shapeModel';
+import { CLIPPED_SHAPES, OUTLINE_POINTS, PALETTE, SHAPES, SHAPE_LABELS, colorLabel, colorValue, isHexColor, legacyStroke, prefersDarkText, readShape, relativeLuminance, withShape } from './shapeModel';
 import type { Shape, ShapeColor, ShapeStyle } from './shapeModel';
 
 export const SHAPE_ATTR = 'data-icor-canvases-shape';
 const FILL_VAR = '--icor-canvases-fill';
+const TEXT_VAR = '--icor-canvases-text';
+const PALETTE_VAR = (n: string): string => `--canvas-color-${n}`;
 const OUTLINE_CLASS = 'icor-canvases-shape-outline';
 const BUTTON_CLASS = 'icor-canvases-shape-button';
 const READONLY = 'This canvas is read-only.';
@@ -34,6 +36,9 @@ export interface ShapesHost {
 
 export class NodeShapes {
   private readonly restores = new Map<CanvasNode, () => void>();
+  /* One 1 by 1 canvas that turns any CSS colour into its channels, for
+     the contrast fallback; made on first use. */
+  private probe: CanvasRenderingContext2D | null = null;
   private unhook: (() => void) | null = null;
   private unlisten: (() => void) | null = null;
   private disposed = false;
@@ -144,9 +149,16 @@ export class NodeShapes {
       else el.removeAttribute(SHAPE_ATTR);
     }
     this.setVar(el, FILL_VAR, colorValue(style.fill));
+    this.setVar(el, TEXT_VAR, colorValue(style.text));
     /* The colour rules apply only to cards that carry a colour, so every
        other card keeps the canvas's own look. */
     el.toggleClass('icor-canvases-filled', style.fill !== '');
+    el.toggleClass('icor-canvases-texted', style.text !== '');
+    /* No text colour on a filled card: light or dark text from the
+       fill's luminance, decided here once per apply, never per frame. */
+    const contrast = style.text === '' && style.fill !== '' && style.fill !== 'transparent' ? this.contrastFor(style.fill) : null;
+    el.toggleClass('icor-canvases-contrast-dark', contrast === 'dark');
+    el.toggleClass('icor-canvases-contrast-light', contrast === 'light');
     const clipped = shape !== null && (CLIPPED_SHAPES as readonly string[]).includes(shape);
     let outline = el.querySelector<SVGSVGElement>(`:scope > .${OUTLINE_CLASS}`);
     if (clipped) {
@@ -162,6 +174,33 @@ export class NodeShapes {
     }
   }
 
+  /* 'dark' or 'light' text for a fill, or null when the colour cannot be
+     read. A palette value resolves through the canvas's own variable on
+     the wrapper. */
+  private contrastFor(fill: string): 'dark' | 'light' | null {
+    const wrapper = this.canvas.wrapperEl;
+    const value = PALETTE.includes(fill) ? wrapper.win.getComputedStyle(wrapper).getPropertyValue(PALETTE_VAR(fill)).trim() : fill;
+    if (!value) return null;
+    const ctx = this.probeContext(wrapper);
+    if (!ctx) return null;
+    ctx.fillStyle = '#000000';
+    ctx.fillStyle = value;
+    if (ctx.fillStyle === '#000000' && !/^#0{6}$|^black$|^rgba?\(0,\s*0,\s*0/i.test(value)) return null;
+    ctx.clearRect(0, 0, 1, 1);
+    ctx.fillRect(0, 0, 1, 1);
+    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+    return prefersDarkText(relativeLuminance(r ?? 0, g ?? 0, b ?? 0)) ? 'dark' : 'light';
+  }
+
+  private probeContext(el: HTMLElement): CanvasRenderingContext2D | null {
+    if (this.probe) return this.probe;
+    const probe = el.doc.createElement('canvas');
+    probe.width = 1;
+    probe.height = 1;
+    this.probe = probe.getContext('2d', { willReadFrequently: true });
+    return this.probe;
+  }
+
   private setVar(el: HTMLElement, name: string, value: string): void {
     if (el.style.getPropertyValue(name) === value) return;
     if (value) el.setCssProps({ [name]: value });
@@ -171,8 +210,9 @@ export class NodeShapes {
   private clear(node: CanvasNode): void {
     const el = node.nodeEl;
     el.removeAttribute(SHAPE_ATTR);
-    el.removeClass('icor-canvases-filled');
+    el.removeClass('icor-canvases-filled', 'icor-canvases-texted', 'icor-canvases-contrast-dark', 'icor-canvases-contrast-light');
     el.style.removeProperty(FILL_VAR);
+    el.style.removeProperty(TEXT_VAR);
     el.querySelector(`:scope > .${OUTLINE_CLASS}`)?.detach();
   }
 
@@ -188,6 +228,7 @@ export class NodeShapes {
     if (menuEl.querySelector(`.${BUTTON_CLASS}`)) return;
     this.menuButton(menuEl, 'shapes', 'Switch shape', (anchor) => this.openShapes(anchor, node));
     this.menuButton(menuEl, 'paint-bucket', 'Fill colour', (anchor) => this.openColor(anchor, node, 'fill'));
+    this.menuButton(menuEl, 'type', 'Text colour', (anchor) => this.openColor(anchor, node, 'text'));
   }
 
   private menuButton(menuEl: HTMLElement, icon: string, label: string, onClick: (anchor: HTMLElement) => void): void {

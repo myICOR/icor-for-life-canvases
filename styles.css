@@ -823,6 +823,46 @@
   stroke-width: 2.5;
 }
 
+/* The text colour, only on cards that carry one; and the contrast
+   fallback for a filled card without one: dark or light text from the
+   fill's luminance, chosen once when the card is applied. Headings and
+   the caret follow the same variable. */
+.icor-canvases-wrapper .canvas-node.icor-canvases-texted > .canvas-node-container {
+  --text-normal: var(--icor-canvases-text);
+  --h1-color: var(--icor-canvases-text);
+  --h2-color: var(--icor-canvases-text);
+  --h3-color: var(--icor-canvases-text);
+  --h4-color: var(--icor-canvases-text);
+  --h5-color: var(--icor-canvases-text);
+  --h6-color: var(--icor-canvases-text);
+  --caret-color: var(--icor-canvases-text);
+  color: var(--icor-canvases-text);
+}
+
+.icor-canvases-wrapper .canvas-node.icor-canvases-contrast-dark > .canvas-node-container {
+  --text-normal: var(--text-on-accent-inverted);
+  --h1-color: var(--text-on-accent-inverted);
+  --h2-color: var(--text-on-accent-inverted);
+  --h3-color: var(--text-on-accent-inverted);
+  --h4-color: var(--text-on-accent-inverted);
+  --h5-color: var(--text-on-accent-inverted);
+  --h6-color: var(--text-on-accent-inverted);
+  --caret-color: var(--text-on-accent-inverted);
+  color: var(--text-on-accent-inverted);
+}
+
+.icor-canvases-wrapper .canvas-node.icor-canvases-contrast-light > .canvas-node-container {
+  --text-normal: var(--text-on-accent);
+  --h1-color: var(--text-on-accent);
+  --h2-color: var(--text-on-accent);
+  --h3-color: var(--text-on-accent);
+  --h4-color: var(--text-on-accent);
+  --h5-color: var(--text-on-accent);
+  --h6-color: var(--text-on-accent);
+  --caret-color: var(--text-on-accent);
+  color: var(--text-on-accent);
+}
+
 /* The fill colour, only on cards that carry one. The outline is the
    card's own colour, set by the canvas's palette button. */
 .icor-canvases-wrapper .canvas-node.icor-canvases-filled > .canvas-node-container::before {
