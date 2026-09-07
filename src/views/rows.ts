@@ -1,12 +1,14 @@
 /* The rows both surfaces share: one block per canvas the note is on, the
  * canvas name on top (click opens the canvas at the card; Mod-click in a
  * new tab), and one row per connection under it: a direction glyph, the
- * other card's title, the edge label in a muted span. A file row opens
- * that note the way a link does; any other row opens the canvas at that
- * card. */
+ * other card's title, the edge label in a muted span. A click on a
+ * connection row opens the canvas at that connection: the edge selected
+ * and both of its cards in view. Mod-click keeps the other end's own
+ * meaning: a note opens in a new tab, any other card opens the canvas at
+ * that card in a new tab. */
 import { Keymap, Notice, setIcon, setTooltip } from 'obsidian';
 import type { App } from 'obsidian';
-import { openCanvasAtNode } from '../canvas/navigate';
+import { openCanvasAtEdge, openCanvasAtNode } from '../canvas/navigate';
 import type { Connection, Direction, Placement } from '../index/parse';
 import { basename, otherTitle } from '../index/parse';
 import { openLikeLink } from '../open';
@@ -46,6 +48,10 @@ function actionable(el: HTMLElement, onActivate: (evt: MouseEvent | KeyboardEven
 
 function openConnection(app: App, placement: Placement, connection: Connection, evt: MouseEvent | KeyboardEvent): void {
   const { other } = connection;
+  if (Keymap.isModEvent(evt) === false) {
+    void openCanvasAtEdge(app, placement.canvasPath, placement.nodeId, connection.edgeId, false);
+    return;
+  }
   if (other.kind === 'file' && other.file) {
     const file = app.vault.getFileByPath(other.file);
     if (!file) {
@@ -55,7 +61,7 @@ function openConnection(app: App, placement: Placement, connection: Connection, 
     void openLikeLink(app, file, evt);
     return;
   }
-  void openCanvasAtNode(app, placement.canvasPath, other.nodeId, Keymap.isModEvent(evt) !== false);
+  void openCanvasAtNode(app, placement.canvasPath, other.nodeId, true);
 }
 
 export function renderPlacements(app: App, container: HTMLElement, placements: Placement[]): void {
@@ -80,6 +86,7 @@ export function renderPlacements(app: App, container: HTMLElement, placements: P
       setIcon(kind, OTHER_ICONS[connection.other.kind]);
       row.createSpan({ cls: 'icor-canvases-row-title', text: otherTitle(connection.other) });
       if (connection.label) row.createSpan({ cls: 'icor-canvases-row-label', text: connection.label });
+      setTooltip(row, connection.other.kind === 'file' ? 'Show this connection on the canvas. Mod-click opens the note in a new tab.' : 'Show this connection on the canvas');
       actionable(row, (evt) => openConnection(app, placement, connection, evt));
     }
   }

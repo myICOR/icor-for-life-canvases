@@ -37,16 +37,21 @@ export interface CanvasFileNode extends CanvasNode {
 
 export interface CanvasEdge {
   id: string;
-  from: { node: CanvasNode; end?: string };
-  to: { node: CanvasNode; end?: string };
+  from: { node: CanvasNode; side?: string; end?: string };
+  to: { node: CanvasNode; side?: string; end?: string };
   label?: string;
+  getBBox(): BBox;
   getData(): CanvasEdgeData;
 }
+
+/* The selection holds nodes and edges alike; an edge selected on its own
+   shows as focused (1.13.7, edge.select adds is-focused to its paths). */
+export type CanvasSelectable = CanvasNode | CanvasEdge;
 
 export interface Canvas {
   nodes: Map<string, CanvasNode>;
   edges: Map<string, CanvasEdge>;
-  selection: Set<CanvasNode>;
+  selection: Set<CanvasSelectable>;
   /* The object the file was loaded from, replaced on every save. */
   data: CanvasFileData;
   readonly: boolean;
@@ -69,7 +74,8 @@ export interface Canvas {
   requestFrame(): void;
   posFromEvt(evt: { clientX: number; clientY: number }): { x: number; y: number };
   zoomToBbox(bbox: BBox): void;
-  selectOnly(node: CanvasNode): void;
+  select(item: CanvasSelectable): void;
+  selectOnly(item: CanvasSelectable): void;
   zoomToSelection(): void;
   deselectAll(): void;
   addNode(node: CanvasNode): void;
@@ -118,6 +124,7 @@ const MEMBERS: Record<string, MemberKind> = {
   requestFrame: 'function',
   posFromEvt: 'function',
   zoomToBbox: 'function',
+  select: 'function',
   selectOnly: 'function',
   zoomToSelection: 'function',
   deselectAll: 'function',
@@ -171,6 +178,12 @@ export function asCanvasView(view: View | null | undefined): CanvasView | null {
   const canvas = (view as Partial<CanvasView>).canvas;
   if (missingMembers(canvas, ['nodes', 'wrapperEl', 'canvasEl', 'data']).length > 0) return null;
   return view as CanvasView;
+}
+
+export function isEdge(item: CanvasSelectable | null | undefined): item is CanvasEdge {
+  if (!item) return false;
+  const e = item as Partial<CanvasEdge>;
+  return typeof e.from === 'object' && e.from !== null && typeof e.to === 'object' && e.to !== null && typeof e.getBBox === 'function';
 }
 
 export function isFileNode(node: CanvasNode | null | undefined): node is CanvasFileNode {

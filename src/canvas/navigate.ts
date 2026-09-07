@@ -1,15 +1,19 @@
-/* Opening a canvas at one of its nodes: open the file, wait for the canvas
- * to have the node, then select it and zoom to it. The wait is a frame
- * loop with a budget, not a timer, because the canvas builds its nodes in
- * `setData` right after the file loads and fits the viewport on its next
- * resize; the second pass a few frames later wins over that fit. */
+/* Opening a canvas at one of its nodes, or at one of its edges: open the
+ * file, wait for the canvas to have the node, then select and zoom. The
+ * wait is a frame loop with a budget, not a timer, because the canvas
+ * builds its nodes in `setData` right after the file loads and fits the
+ * viewport on its next resize; the second pass a few frames later wins
+ * over that fit. */
 import { Notice } from 'obsidian';
 import type { App, WorkspaceLeaf } from 'obsidian';
-import { asCanvasView, requireCanvas } from './internals';
+import { padBox, unionBox } from './geometry';
+import { asCanvasView, isEdge, requireCanvas } from './internals';
 import type { Canvas, CanvasNode } from './internals';
 
 const FRAME_BUDGET = 180;
 const SETTLE_FRAMES = 6;
+/* Around an edge and its two cards, in canvas units. */
+const EDGE_MARGIN = 40;
 
 function nextFrame(win: Window): Promise<void> {
   return new Promise((resolve) => win.requestAnimationFrame(() => resolve()));
@@ -18,6 +22,20 @@ function nextFrame(win: Window): Promise<void> {
 function focusNode(canvas: Canvas, node: CanvasNode): void {
   canvas.selectOnly(node);
   canvas.zoomToSelection();
+}
+
+/* Selects the edge (it shows as focused) and fits both of its cards. Falls
+   back to the card when the edge is gone. */
+function focusEdge(canvas: Canvas, node: CanvasNode, edgeId: string): void {
+  const edge = canvas.edges.get(edgeId);
+  if (!isEdge(edge)) {
+    focusNode(canvas, node);
+    return;
+  }
+  const box = unionBox([edge.from.node.getBBox(), edge.to.node.getBBox()]);
+  canvas.selectOnly(edge);
+  if (box) canvas.zoomToBbox(padBox(box, EDGE_MARGIN));
+  else canvas.zoomToSelection();
 }
 
 /* The leaf already showing this canvas in the main area, if any. */
@@ -33,7 +51,7 @@ function leafShowing(app: App, canvasPath: string): WorkspaceLeaf | null {
   return found;
 }
 
-export async function openCanvasAtNode(app: App, canvasPath: string, nodeId: string, newTab: boolean): Promise<boolean> {
+async function openCanvasAnd(app: App, canvasPath: string, nodeId: string, newTab: boolean, focus: (canvas: Canvas, node: CanvasNode) => void): Promise<boolean> {
   const file = app.vault.getFileByPath(canvasPath);
   if (!file) {
     new Notice(`Canvas not found: ${canvasPath}`);
@@ -57,14 +75,24 @@ export async function openCanvasAtNode(app: App, canvasPath: string, nodeId: str
     const canvas = view?.canvas;
     const node = canvas?.nodes.get(nodeId);
     if (canvas && node) {
-      if (!requireCanvas(canvas, ['selectOnly', 'zoomToSelection'], 'Zoom to a card')) return false;
-      focusNode(canvas, node);
+      if (!requireCanvas(canvas, ['edges', 'selectOnly', 'zoomToSelection', 'zoomToBbox'], 'Zoom to a card')) return false;
+      focus(canvas, node);
       for (let i = 0; i < SETTLE_FRAMES; i++) await nextFrame(win);
-      if (canvas.nodes.get(nodeId) === node) focusNode(canvas, node);
+      if (canvas.nodes.get(nodeId) === node) focus(canvas, node);
       return true;
     }
     await nextFrame(win);
   }
   new Notice('The card is no longer on this canvas.');
   return false;
+}
+
+export function openCanvasAtNode(app: App, canvasPath: string, nodeId: string, newTab: boolean): Promise<boolean> {
+  return openCanvasAnd(app, canvasPath, nodeId, newTab, focusNode);
+}
+
+/* `nodeId` is the card at this note's end of the edge: the ephemeral state
+   lands there first, then the edge and both cards come into view. */
+export function openCanvasAtEdge(app: App, canvasPath: string, nodeId: string, edgeId: string, newTab: boolean): Promise<boolean> {
+  return openCanvasAnd(app, canvasPath, nodeId, newTab, (canvas, node) => focusEdge(canvas, node, edgeId));
 }
