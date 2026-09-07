@@ -295,10 +295,9 @@ export class NodeShapes {
       evt.preventDefault();
       evt.stopPropagation();
       /* One popover at a time: the canvas's own colour submenu, if open,
-         closes when ours opens (ours closes on any outside press already,
-         so the reverse needs nothing). */
-      for (const submenu of menuEl.querySelectorAll('.canvas-submenu:not(.icor-canvases-flyout)')) submenu.detach();
-      for (const active of menuEl.querySelectorAll('.clickable-icon.is-active')) active.removeClass('is-active');
+         closes when ours opens, through its own button so core's state
+         follows (ours closes on any outside press already). */
+      for (const active of menuEl.querySelectorAll<HTMLElement>(`.clickable-icon.is-active:not(.${BUTTON_CLASS})`)) active.click();
       onClick(button);
     });
   }
