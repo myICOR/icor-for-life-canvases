@@ -29,6 +29,11 @@ of 0.2.0.
   its full bounding rectangle as a thin accent frame with four corner
   discs, so the resize edges can be found; core's own resize and
   connector zones do the work. On touch the corner hit areas are 24px.
+- **Outline and Fill on shaped cards.** A shaped card's toolbar shows
+  Outline (writes the card's own colour, core's key) and Fill side by
+  side with Text, each button a swatch of its state; core's palette
+  button steps aside there and stays as it is on plain cards. Core's
+  colour tint behind the text no longer shows on shaped cards.
 - **Text colour** on text cards, and on a filled card without one, dark
   or light text picked from the fill's luminance.
 - `docs/canvas-format.md`: every key the plugin writes, its type,

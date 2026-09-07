@@ -299,15 +299,37 @@ export class NodeShapes {
     const node = selected[0];
     if (!node || isEdge(node) || !isTextNode(node) || !hasUnknownData(node)) return;
     if (menuEl.querySelector(`.${BUTTON_CLASS}`)) return;
+    const style = readShape(node.unknownData);
     this.menuButton(menuEl, 'shapes', 'Switch shape', (anchor) => this.openShapes(anchor, node));
-    this.menuButton(menuEl, 'paint-bucket', 'Fill colour', (anchor) => this.openColor(anchor, node, 'fill'));
+    if (style.shape !== 'card') {
+      /* A shaped card: core's palette button (found by its icon) gives
+         way to an Outline flyout that writes the same key, node.color,
+         beside a Fill flyout; both show their state as a swatch. */
+      menuEl.querySelector('button.clickable-icon:has(> svg.lucide-palette)')?.addClass('icor-canvases-hidden');
+      const outline = this.menuButton(menuEl, null, 'Outline colour', (anchor) => this.openOutline(anchor, node));
+      this.swatch(outline, 'icor-canvases-state-ring', nodeColor(node));
+      const fill = this.menuButton(menuEl, null, 'Fill colour', (anchor) => this.openColor(anchor, node, 'fill'));
+      this.swatch(fill, 'icor-canvases-state-disc', style.fill);
+    } else {
+      this.menuButton(menuEl, 'paint-bucket', 'Fill colour', (anchor) => this.openColor(anchor, node, 'fill'));
+    }
     this.menuButton(menuEl, 'type', 'Text colour', (anchor) => this.openColor(anchor, node, 'text'));
   }
 
-  private menuButton(menuEl: HTMLElement, icon: string, label: string, onClick: (anchor: HTMLElement) => void): void {
+  /* The state swatch on a toolbar button: the colour through the canvas's
+     own --canvas-color, a palette class for a palette value, the value
+     itself for a hex, and a "none" mark for the card's own. */
+  private swatch(button: HTMLElement, cls: string, color: string): void {
+    const span = button.createSpan({ cls: ['icor-canvases-state-swatch', cls] });
+    if (PALETTE.includes(color)) span.addClass(`mod-canvas-color-${color}`);
+    else if (isHexColor(color)) span.setCssProps({ '--canvas-color': color });
+    else span.addClass(color === 'transparent' ? 'icor-canvases-state-none' : 'icor-canvases-state-default');
+  }
+
+  private menuButton(menuEl: HTMLElement, icon: string | null, label: string, onClick: (anchor: HTMLElement) => void): HTMLElement {
     /* The canvas's own toolbar buttons are `button.clickable-icon`. */
     const button = menuEl.createEl('button', { cls: ['clickable-icon', BUTTON_CLASS], attr: { 'aria-label': label } });
-    setIcon(button, icon);
+    if (icon) setIcon(button, icon);
     setTooltip(button, label, { placement: 'top' });
     button.addEventListener('click', (evt) => {
       evt.preventDefault();
@@ -317,6 +339,52 @@ export class NodeShapes {
          follows (ours closes on any outside press already). */
       for (const active of menuEl.querySelectorAll<HTMLElement>(`.clickable-icon.is-active:not(.${BUTTON_CLASS})`)) active.click();
       onClick(button);
+    });
+    return button;
+  }
+
+  /* The outline is the card's own colour, core's key; the same write core's
+     palette makes (setColor takes a palette value or a hex), so the
+     outline stays theme-driven and core-compatible. */
+  private openOutline(anchor: HTMLElement, node: CanvasNode): void {
+    const current = nodeColor(node);
+    const pick = (color: string): void => {
+      if (this.canvas.readonly || typeof node.setColor !== 'function') return;
+      node.setColor(color);
+      this.canvas.requestSave();
+      this.apply(node);
+      this.selection?.refresh();
+    };
+    Flyout.open({
+      anchor,
+      placement: 'below',
+      build: (panel, close) => {
+        for (const color of ['', ...PALETTE]) {
+          const cls = ['canvas-color-picker-item', 'icor-canvases-swatch'];
+          if (color === '') cls.push('icor-canvases-swatch-card');
+          else cls.push(`mod-canvas-color-${color}`);
+          flyoutOption(panel, cls, `Outline: ${colorLabel(color)}`, color === current, () => {
+            pick(color);
+            close();
+          });
+        }
+        const custom = panel.createDiv({ cls: ['canvas-color-picker-item', 'canvas-color-picker-custom', 'icor-canvases-swatch', 'icor-canvases-swatch-custom'] });
+        const input = custom.createEl('input', { type: 'color', attr: { 'aria-label': 'Custom colour' } });
+        if (isHexColor(current)) {
+          input.value = current;
+          custom.addClass('is-active');
+          custom.setCssProps({ '--canvas-color': current });
+        }
+        setTooltip(custom, 'Custom colour', { placement: 'top' });
+        input.addEventListener('input', () => {
+          custom.setCssProps({ '--canvas-color': input.value });
+          pick(input.value);
+        });
+        input.addEventListener('change', () => {
+          pick(input.value);
+          close();
+        });
+      },
     });
   }
 
@@ -352,7 +420,11 @@ export class NodeShapes {
 
   private openColor(anchor: HTMLElement, node: CanvasNode, which: 'fill' | 'text'): void {
     const current = readShape(node.unknownData)[which];
-    const pick = (color: ShapeColor): void => this.set(node, { [which]: color });
+    const pick = (color: ShapeColor): void => {
+      this.set(node, { [which]: color });
+      /* The state swatch on the button follows. */
+      if (which === 'fill') this.selection?.refresh();
+    };
     const label = which === 'fill' ? 'Fill' : 'Text';
     Flyout.open({
       anchor,
