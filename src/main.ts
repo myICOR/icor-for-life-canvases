@@ -1,8 +1,8 @@
-/* ICOR for Life - Canvases. Four things for Obsidian's canvas: an ink
- * layer per canvas, saved in the .canvas file; modifier-click on a note
- * card to open it in the right sidebar; a toolbar on every note card with
- * a pill for notes that sit on more than one canvas; and an index of every
- * canvas in the vault that shows, under each note and in a sidebar view,
+/* ICOR for Life - Canvases. For Obsidian's canvas: an ink layer per
+ * canvas, saved in the .canvas file; modifier-click on a note card to open
+ * it in the right sidebar; a toolbar on every note card with a pill for
+ * notes that sit on more than one canvas; and an index of every canvas in
+ * the vault that shows, under each note and inside the Backlinks pane,
  * which canvases the note is on and what its card is connected to there.
  * The canvas API Obsidian does not publish is reached through one guarded
  * adapter (src/canvas/internals.ts). */
@@ -15,7 +15,7 @@ import { openInNewTab, openInRightSidebar } from './open';
 import { DEFAULT_SETTINGS, normaliseSettings } from './settings/model';
 import type { CanvasesSettings } from './settings/model';
 import { CanvasesSettingsTab } from './settings/SettingsTab';
-import { CanvasesView, VIEW_ICON, VIEW_TITLE } from './views/CanvasesView';
+import { BACKLINK_VIEW_TYPE, BacklinksSections } from './views/backlinksSection';
 import { Footers } from './views/footer';
 
 const NO_SIDEBAR = 'The right sidebar is not available in this window.';
@@ -25,6 +25,7 @@ export default class CanvasesPlugin extends Plugin {
   private index!: CanvasIndex;
   private registry!: CanvasRegistry;
   private footers!: Footers;
+  private backlinks!: BacklinksSections;
 
   override async onload(): Promise<void> {
     this.settings = normaliseSettings(await this.loadData());
@@ -33,11 +34,8 @@ export default class CanvasesPlugin extends Plugin {
     this.index = new CanvasIndex(this.app, log);
     this.registry = new CanvasRegistry({ app: this.app, index: this.index, settings, log });
     this.footers = new Footers({ app: this.app, index: this.index, enabled: () => this.settings.footer, log });
+    this.backlinks = new BacklinksSections({ app: this.app, index: this.index, log });
 
-    this.registerView(VIEW_TYPE, (leaf) => new CanvasesView(leaf, this.index));
-    this.addRibbonIcon(VIEW_ICON, `Open ${VIEW_TITLE.toLowerCase()} panel`, () => {
-      void this.openPanel();
-    });
     this.addSettingTab(new CanvasesSettingsTab(this.app, this));
     this.registerCommands();
     this.registerIndexEvents();
@@ -46,16 +44,27 @@ export default class CanvasesPlugin extends Plugin {
     const sweep = (): void => {
       this.registry.sweep();
       this.footers.sweep();
+      this.backlinks.sweep();
     };
     this.registerEvent(this.app.workspace.on('layout-change', sweep));
     this.registerEvent(this.app.workspace.on('active-leaf-change', sweep));
-    this.registerEvent(this.app.workspace.on('file-open', () => this.footers.sweep()));
+    this.registerEvent(
+      this.app.workspace.on('file-open', () => {
+        this.footers.sweep();
+        this.backlinks.sweep();
+      }),
+    );
     this.registerMarkdownPostProcessor(() => {
       this.footers.scheduleSweep();
     });
     this.app.workspace.onLayoutReady(() => {
+      /* 0.1.0 had its own "Canvases" sidebar view; 0.2.0 folds it into the
+         Backlinks pane. A leaf of the retired type left in the workspace
+         would otherwise show as a view that no longer exists. */
+      this.app.workspace.detachLeavesOfType(VIEW_TYPE);
       void this.index.rebuild();
       this.footers.start();
+      this.backlinks.start();
       sweep();
     });
   }
@@ -63,6 +72,7 @@ export default class CanvasesPlugin extends Plugin {
   override onunload(): void {
     this.registry.disposeAll();
     this.footers.disposeAll();
+    this.backlinks.disposeAll();
     this.index.dispose();
   }
 
@@ -74,6 +84,7 @@ export default class CanvasesPlugin extends Plugin {
   applySettings(): void {
     this.registry.applySettings();
     this.footers.sweep();
+    this.backlinks.renderAll();
   }
 
   log(message: string): void {
@@ -103,11 +114,13 @@ export default class CanvasesPlugin extends Plugin {
         return true;
       },
     });
+    /* The 0.1.0 id is kept so a hotkey bound to it survives; the panel
+       is the Backlinks pane now. */
     this.addCommand({
       id: 'open-canvases-panel',
-      name: 'Open canvases panel',
-      icon: VIEW_ICON,
-      callback: () => void this.openPanel(),
+      name: 'Show canvases for this note',
+      icon: 'links-coming-in',
+      callback: () => void this.showBacklinks(),
     });
   }
 
@@ -169,11 +182,13 @@ export default class CanvasesPlugin extends Plugin {
     );
   }
 
-  private async openPanel(): Promise<void> {
+  /* Reveals the core Backlinks pane, where the Canvases section lives. */
+  private async showBacklinks(): Promise<void> {
     const { workspace } = this.app;
-    const existing = workspace.getLeavesOfType(VIEW_TYPE)[0];
+    const existing = workspace.getLeavesOfType(BACKLINK_VIEW_TYPE)[0];
     if (existing) {
       await workspace.revealLeaf(existing);
+      this.backlinks.sweep();
       return;
     }
     const leaf = workspace.getRightLeaf(false);
@@ -181,7 +196,8 @@ export default class CanvasesPlugin extends Plugin {
       new Notice(NO_SIDEBAR);
       return;
     }
-    await leaf.setViewState({ type: VIEW_TYPE, active: true });
+    await leaf.setViewState({ type: BACKLINK_VIEW_TYPE, active: true });
     await workspace.revealLeaf(leaf);
+    this.backlinks.sweep();
   }
 }

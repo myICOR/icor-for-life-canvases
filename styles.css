@@ -184,14 +184,15 @@
   height: var(--icon-xs);
 }
 
-/* The sidebar view and the note footer share the rows. */
-.icor-canvases-view {
-  padding: var(--size-4-2) var(--size-4-3);
+/* The Backlinks pane section and the note footer share the rows. The
+   section's header carries the pane's own header classes; only the body
+   needs a rule, so its rows align with the pane's results. */
+.icor-canvases-backlinks-body .icor-canvases-canvas {
+  margin-bottom: var(--size-4-2);
 }
 
-.icor-canvases-note {
-  font-weight: var(--font-semibold);
-  margin-bottom: var(--size-4-2);
+.icor-canvases-backlinks-body .icor-canvases-empty {
+  padding: var(--size-2-1) var(--size-4-2);
 }
 
 .icor-canvases-empty {

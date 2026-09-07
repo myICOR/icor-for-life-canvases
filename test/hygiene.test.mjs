@@ -91,7 +91,13 @@ test('every private canvas member is named in internals.ts and guarded before us
 });
 
 test('every class the plugin adds carries the icor-canvases- prefix, apart from the borrowed canvas control classes', () => {
-  const borrowed = new Set(['canvas-control-group', 'mod-raised', 'canvas-control-item', 'is-empty', 'is-active', 'is-erasing', 'is-collapsed']);
+  /* The canvas control classes, and the Backlinks pane's own header and
+     container classes, so the theme styles the plugin's section like the
+     pane's two. */
+  const borrowed = new Set([
+    'canvas-control-group', 'mod-raised', 'canvas-control-item', 'is-empty', 'is-active', 'is-erasing', 'is-collapsed',
+    'tree-item-self', 'is-clickable', 'tree-item-icon', 'collapse-icon', 'tree-item-inner', 'tree-item-flair-outer', 'tree-item-flair', 'search-result-container', 'search-empty-state',
+  ]);
   for (const f of sources) {
     const text = readFileSync(f, 'utf8');
     for (const m of text.matchAll(/(?:addClass|cls:)\s*\(?\s*(\[[^\]]*\]|'[^']+'|`[^`]+`)/g)) {

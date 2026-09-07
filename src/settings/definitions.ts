@@ -51,7 +51,7 @@ export const SETTING_ROWS: readonly SettingRow[] = [
     group: 'Notes',
     key: 'footer',
     name: 'Show canvases under the note',
-    desc: 'A block at the end of every note, next to the "Backlinks in document" block, listing each canvas the note is on and what its card is connected to there. Nothing is shown for a note that is on no canvas. The sidebar view shows the same rows for the active note whatever this is set to.',
+    desc: 'A block at the end of every note, next to the "Backlinks in document" block, listing each canvas the note is on and what its card is connected to there. Nothing is shown for a note that is on no canvas. The Canvases section in the Backlinks pane shows the same rows whatever this is set to.',
   },
   {
     type: 'dropdown',
