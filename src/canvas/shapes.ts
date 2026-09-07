@@ -268,6 +268,10 @@ export class NodeShapes {
     el.removeClass('icor-canvases-filled', 'icor-canvases-texted', 'icor-canvases-contrast-dark', 'icor-canvases-contrast-light');
     el.style.removeProperty(FILL_VAR);
     el.style.removeProperty(TEXT_VAR);
+    /* A live editor loses its mark with the plugin. */
+    const root = el.querySelector<HTMLIFrameElement>('iframe.embed-iframe')?.contentDocument?.documentElement;
+    root?.removeClass(EDITOR_BODY_CLASS);
+    root?.style.removeProperty(EDITOR_TEXT_VAR);
     el.querySelector(`:scope > .${OUTLINE_CLASS}`)?.detach();
   }
 
