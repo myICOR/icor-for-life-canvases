@@ -49,5 +49,8 @@ export class SelectionMenuHook {
     this.listeners.clear();
     this.restore?.();
     this.restore = null;
+    /* Core rebuilds its toolbar clean, so the plugin's buttons leave with
+       the plugin. */
+    selectionMenu(this.canvas)?.render(true);
   }
 }

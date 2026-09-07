@@ -213,7 +213,7 @@ export class NodeShapes {
     const watcher = this.watchers.get(node);
     if (watcher && root.ownerDocument.body) {
       watcher.editor?.disconnect();
-      const editor = new MutationObserver(() => watcher.measure());
+      const editor = new (root.win as typeof window).MutationObserver(() => watcher.measure());
       editor.observe(root.ownerDocument.body, { childList: true, subtree: true, characterData: true });
       watcher.editor = editor;
       watcher.measure();
@@ -300,9 +300,11 @@ export class NodeShapes {
     const box = this.contentBox(node);
     if (!box) return;
     const measure = debounce(() => this.measureOverflow(node), MEASURE_MS, true);
-    const resize = new ResizeObserver(() => measure());
+    /* From the box's own window, so a pop-out delivers to its own frame. */
+    const realm = box.win as typeof window;
+    const resize = new realm.ResizeObserver(() => measure());
     resize.observe(box);
-    const mutation = new MutationObserver(() => measure());
+    const mutation = new realm.MutationObserver(() => measure());
     mutation.observe(box, { childList: true, subtree: true, characterData: true });
     this.watchers.set(node, { resize, mutation, editor: null, measure });
     measure();
@@ -341,7 +343,15 @@ export class NodeShapes {
   }
 
   private measureOverflow(node: CanvasNode): void {
-    if (this.disposed || !this.watchers.has(node)) return;
+    if (this.disposed) return;
+    const watcher = this.watchers.get(node);
+    if (!watcher) return;
+    /* Core destroys the editor iframe on the return to preview; the
+       observer on its document goes with it. */
+    if (watcher.editor && !node.nodeEl.hasClass('is-editing')) {
+      watcher.editor.disconnect();
+      watcher.editor = null;
+    }
     const size = this.contentSize(node);
     const box = this.contentBox(node);
     if (!size || !box) return;
@@ -457,7 +467,11 @@ export class NodeShapes {
       /* A shaped card: core's palette button (found by its icon) gives
          way to an Outline flyout that writes the same key, node.color,
          beside a Fill flyout; both show their state as a swatch. */
-      menuEl.querySelector('button.clickable-icon:has(> svg.lucide-palette)')?.addClass('icor-canvases-hidden');
+      /* Found by the icon setIcon puts first in the button; no :has(),
+         which an older Android WebView throws on. */
+      Array.from(menuEl.querySelectorAll<HTMLElement>('button.clickable-icon'))
+        .find((b) => b.firstElementChild?.classList.contains('lucide-palette'))
+        ?.addClass('icor-canvases-hidden');
       const outline = this.menuButton(menuEl, null, 'Outline colour', (anchor) => this.openOutline(anchor, node));
       this.swatch(outline, 'icor-canvases-state-ring', nodeColor(node));
       const fill = this.menuButton(menuEl, null, 'Fill colour', (anchor) => this.openColor(anchor, node, 'fill'));

@@ -238,7 +238,9 @@
 .icor-canvases-wrapper.is-screenshotting .icor-canvases-breadcrumb,
 .icor-canvases-wrapper.is-screenshotting .icor-canvases-node,
 .icor-canvases-wrapper.is-screenshotting .icor-canvases-minimap,
-.icor-canvases-wrapper.is-screenshotting .icor-canvases-zoom-bar {
+.icor-canvases-wrapper.is-screenshotting .icor-canvases-zoom-bar,
+.icor-canvases-wrapper.is-screenshotting .icor-canvases-overflow,
+.icor-canvases-wrapper.is-screenshotting .icor-canvases-frame {
   display: none;
 }
 

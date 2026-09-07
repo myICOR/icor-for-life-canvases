@@ -76,6 +76,14 @@ Tom's live test of the 0.3.0 build.
   the core backlinks plugin being off.
 
 ### Fixed (Flint's review of 0.3.0, and Tom's live test of the build)
+- Flint's release read, before the tag: exports as image hide the
+  overflow pill and the hover frame too; the palette button and the zoom
+  items are found without `:has()`, which an older Android WebView throws
+  on; the status-bar offset applies only to a canvas the bar overlaps;
+  the editor's overflow observer is released between edits and the
+  observers are created from the card's own window; an unload rebuilds
+  core's toolbar so the plugin's buttons leave with it; the gate runs
+  the directory's manifest checks.
 - The editor's mark on a styled card goes on the iframe's root element,
   which core's style relay never rebuilds, so the fill and the text
   colour stay while typing; the mark is cleared on dispose.

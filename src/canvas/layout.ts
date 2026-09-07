@@ -123,7 +123,10 @@ export class ColumnLayout {
   private buildZoomBar(): void {
     const column = controlsColumn(this.canvas);
     if (!column) return;
-    const find = (icon: string): HTMLElement | null => column.querySelector<HTMLElement>(`.canvas-control-item:has(> svg.${icon})`);
+    /* By the icon core sets first in each item; no :has(), which an older
+       Android WebView throws on. */
+    const items = Array.from(column.querySelectorAll<HTMLElement>('.canvas-control-item'));
+    const find = (icon: string): HTMLElement | null => items.find((item) => item.firstElementChild?.classList.contains(icon)) ?? null;
     const fit = find(ZOOM_ICONS.fit);
     const zoomIn = find(ZOOM_ICONS.in);
     const zoomOut = find(ZOOM_ICONS.out);

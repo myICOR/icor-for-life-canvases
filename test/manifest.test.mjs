@@ -53,10 +53,15 @@ test('one identity across manifest, package and constants', () => {
   assert.equal(VIEW_TYPE, 'icor-canvases');
 });
 
-test('the description is under 250 characters, ends with a period, and never names the app', () => {
-  assert.ok(manifest.description.length < 250, `${manifest.description.length} characters`);
-  assert.ok(manifest.description.endsWith('.'));
-  assert.doesNotMatch(manifest.description, /obsidian/i);
+test('the description passes the directory scanner\'s manifest rule, and never names the app', () => {
+  /* The four checks of eslint-plugin-obsidianmd's validate-manifest, which
+     the recommended config scopes to files the gate does not lint. */
+  const d = manifest.description;
+  assert.ok(d.length >= 10 && d.length <= 250, `${d.length} characters`);
+  assert.match(d, /^[A-Z]/, 'starts with a capital');
+  assert.ok(d.endsWith('.'), 'ends with a period');
+  assert.match(d, /^[A-Za-z0-9\s.,!?'"-]+$/, 'plain characters only');
+  assert.doesNotMatch(d, /obsidian/i);
 });
 
 test('one version across manifest, package and versions.json', () => {

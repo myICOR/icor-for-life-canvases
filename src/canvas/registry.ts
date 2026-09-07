@@ -78,7 +78,15 @@ export class CanvasRegistry {
      changes; never per frame. */
   private measureStatusBar(wrapper: HTMLElement): void {
     const bar = wrapper.doc.querySelector<HTMLElement>('.status-bar');
-    const height = bar && wrapper.win.getComputedStyle(bar).display !== 'none' ? bar.offsetHeight : 0;
+    let height = 0;
+    if (bar && wrapper.win.getComputedStyle(bar).display !== 'none') {
+      /* The bar is fixed at the window's corner; only a canvas whose
+         rectangle it overlaps needs the room. */
+      const b = bar.getBoundingClientRect();
+      const w = wrapper.getBoundingClientRect();
+      const overlaps = b.left < w.right && b.right > w.left && b.top < w.bottom && b.bottom > w.top;
+      if (overlaps) height = bar.offsetHeight;
+    }
     wrapper.setCssProps({ '--icor-canvases-status-bar-height': `${height}px` });
   }
 

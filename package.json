@@ -9,7 +9,7 @@
     "build": "node esbuild.config.mjs production",
     "dev": "node esbuild.config.mjs",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src styles.css",
+    "lint": "eslint src styles.css manifest.json LICENSE",
     "pretest": "node test/build.mjs",
     "test": "node --test test/*.test.mjs",
     "gate": "npm run typecheck && npm run build && npm run lint && npm test"

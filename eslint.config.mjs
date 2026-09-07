@@ -5,7 +5,9 @@
  * scanner reads it. */
 import { defineConfig } from 'eslint/config';
 import obsidianmd from 'eslint-plugin-obsidianmd';
+import { PlainTextParser } from 'eslint-plugin-obsidianmd/dist/lib/plainTextParser.js';
 import css from '@eslint/css';
+import json from '@eslint/json';
 
 export default defineConfig([
   ...obsidianmd.configs.recommended.map((c) => ({
@@ -38,6 +40,25 @@ export default defineConfig([
          the scanner cannot see; it validates the shape and lets the
          names through. */
       'css/no-invalid-properties': ['error', { allowUnknownVariables: true }],
+    },
+  },
+  /* The directory's manifest and licence checks run on plain text; the
+     plugin's recommended config scopes them to files the gate would not
+     otherwise lint. */
+  {
+    files: ['manifest.json'],
+    plugins: { json, obsidianmd },
+    language: 'json/json',
+    rules: {
+      'obsidianmd/validate-manifest': 'error',
+    },
+  },
+  {
+    files: ['LICENSE'],
+    plugins: { obsidianmd },
+    languageOptions: { parser: PlainTextParser },
+    rules: {
+      'obsidianmd/validate-license': 'error',
     },
   },
   {
