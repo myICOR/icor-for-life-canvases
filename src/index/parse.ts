@@ -4,6 +4,8 @@
  * canvas draws it: `fromEnd` defaults to 'none' and `toEnd` to 'arrow', so
  * a plain edge points from `fromNode` to `toNode`. */
 import type { CanvasEdgeData, CanvasFileData, CanvasNodeData } from '../canvas/format';
+import { boxArea, boxOf, containsBox } from '../canvas/geometry';
+import type { Box } from '../canvas/geometry';
 
 export type Direction = 'out' | 'in' | 'both' | 'none';
 
@@ -25,10 +27,19 @@ export interface Connection {
   edgeId: string;
 }
 
+/* A group whose box wholly contains the card's box. */
+export interface GroupRef {
+  nodeId: string;
+  /* Empty when the group has no label. */
+  label: string;
+}
+
 export interface Placement {
   canvasPath: string;
   nodeId: string;
   connections: Connection[];
+  /* Innermost first: the smallest containing group leads. */
+  groups: GroupRef[];
 }
 
 /* Note path (as written in the canvas) to its placements on this canvas. */
@@ -120,15 +131,42 @@ export function parseCanvasJson(text: string): CanvasFileData | null {
   }
 }
 
-/* Every file node on the canvas, with its connections, keyed by the file
-   path the node names. A file that appears twice yields two placements.
-   An edge from a node to itself is not a connection. */
+function boxOfNode(node: CanvasNodeData): Box | null {
+  const { x, y, width, height } = node;
+  if (![x, y, width, height].every((n) => typeof n === 'number' && Number.isFinite(n))) return null;
+  return boxOf(x, y, width, height);
+}
+
+export const UNNAMED_GROUP = 'unnamed group';
+
+/* The groups whose box contains the node's, innermost (smallest) first.
+   Touching edges count as inside, as the canvas's own containment does. */
+export function containingGroups(node: CanvasNodeData, groups: readonly { node: CanvasNodeData; box: Box }[]): GroupRef[] {
+  const box = boxOfNode(node);
+  if (!box) return [];
+  return groups
+    .filter((g) => g.node.id !== node.id && containsBox(g.box, box))
+    .sort((a, b) => boxArea(a.box) - boxArea(b.box))
+    .map((g) => ({ nodeId: g.node.id, label: typeof g.node.label === 'string' ? g.node.label.trim() : '' }));
+}
+
+/* Every file node on the canvas, with its connections and the groups
+   around it, keyed by the file path the node names. A file that appears
+   twice yields two placements. An edge from a node to itself is not a
+   connection. A card that points at another canvas is a placement of
+   that canvas, which is how a nested canvas finds its parents. */
 export function placementsOf(canvasPath: string, data: CanvasFileData): CanvasPlacements {
   const out: CanvasPlacements = new Map();
   const nodes = Array.isArray(data.nodes) ? data.nodes.filter(isNode) : [];
   const edges = Array.isArray(data.edges) ? data.edges.filter(isEdge) : [];
   const byId = new Map<string, CanvasNodeData>();
   for (const n of nodes) byId.set(n.id, n);
+  const groups: { node: CanvasNodeData; box: Box }[] = [];
+  for (const n of nodes) {
+    if (n.type !== 'group') continue;
+    const box = boxOfNode(n);
+    if (box) groups.push({ node: n, box });
+  }
   for (const node of nodes) {
     if (node.type !== 'file' || typeof node.file !== 'string' || node.file.length === 0) continue;
     const connections: Connection[] = [];
@@ -147,7 +185,7 @@ export function placementsOf(canvasPath: string, data: CanvasFileData): CanvasPl
       connections.push(connection);
     }
     const list = out.get(node.file) ?? [];
-    list.push({ canvasPath, nodeId: node.id, connections });
+    list.push({ canvasPath, nodeId: node.id, connections, groups: containingGroups(node, groups) });
     out.set(node.file, list);
   }
   return out;

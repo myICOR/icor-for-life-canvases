@@ -10,7 +10,7 @@ import { Keymap, Notice, setIcon, setTooltip } from 'obsidian';
 import type { App } from 'obsidian';
 import { openCanvasAtEdge, openCanvasAtNode } from '../canvas/navigate';
 import type { Connection, Direction, Placement } from '../index/parse';
-import { basename, otherTitle } from '../index/parse';
+import { UNNAMED_GROUP, basename, otherTitle } from '../index/parse';
 import { openLikeLink } from '../open';
 
 export const DIRECTION_ICONS: Record<Direction, string> = {
@@ -72,6 +72,15 @@ export function renderPlacements(app: App, container: HTMLElement, placements: P
     title.createSpan({ cls: 'icor-canvases-canvas-name', text: basename(placement.canvasPath) });
     setTooltip(title, 'Open the canvas at this card');
     actionable(title, (evt) => void openCanvasAtNode(app, placement.canvasPath, placement.nodeId, Keymap.isModEvent(evt) !== false));
+    /* The groups around the card, innermost first, one muted line each;
+       a click opens the canvas at the group. */
+    for (const group of placement.groups) {
+      const line = block.createDiv({ cls: 'icor-canvases-canvas-group' });
+      setIcon(line.createSpan({ cls: 'icor-canvases-canvas-group-icon' }), 'group');
+      line.createSpan({ cls: 'icor-canvases-canvas-group-text', text: `in group ${group.label || UNNAMED_GROUP}` });
+      setTooltip(line, 'Open the canvas at this group');
+      actionable(line, (evt) => void openCanvasAtNode(app, placement.canvasPath, group.nodeId, Keymap.isModEvent(evt) !== false));
+    }
     const rows = block.createDiv({ cls: 'icor-canvases-rows' });
     if (placement.connections.length === 0) {
       rows.createDiv({ cls: ['icor-canvases-row', 'is-empty'], text: 'No connections' });

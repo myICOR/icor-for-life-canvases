@@ -71,6 +71,10 @@ export class CanvasRegistry {
     const canvas = view.canvas;
     const binding: CanvasBinding = { view, canvas, ink: null, tools: null, toolbars: null, selection: null, disposers: [] };
     const s = host.settings();
+    /* The plugin's own class on the wrapper scopes its stylesheet rules
+       that reach a core element under it (the group label). */
+    canvas.wrapperEl.addClass('icor-canvases-wrapper');
+    binding.disposers.push(() => canvas.wrapperEl.removeClass('icor-canvases-wrapper'));
     /* One wrap of the selection toolbar's render, shared. */
     const selection = new SelectionMenuHook(canvas);
     if (requireCanvas(canvas, ['menu'], 'Selection toolbar') && selection.attach()) binding.selection = selection;

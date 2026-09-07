@@ -3,7 +3,7 @@
  * title, and what a malformed file yields. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { basename, direction, firstLine, otherTitle, parseCanvasFile, placementsOf } from './build/pure.mjs';
+import { UNNAMED_GROUP, basename, containingGroups, direction, firstLine, otherTitle, parseCanvasFile, placementsOf } from './build/pure.mjs';
 
 const node = (id, extra) => ({ id, x: 0, y: 0, width: 100, height: 100, ...extra });
 const file = (id, path) => node(id, { type: 'file', file: path });
@@ -114,4 +114,31 @@ test("Tom's test canvas: two file nodes, one edge labelled test", () => {
   assert.equal(otherTitle(one.connections[0].other), 'two');
   assert.equal(two.connections[0].direction, 'out');
   assert.equal(otherTitle(two.connections[0].other), 'one');
+});
+
+test('a placement lists the groups around its card, innermost first, and a canvas on a canvas is a placement', () => {
+  const data = {
+    nodes: [
+      { id: 'outer', type: 'group', label: 'Outer', x: 0, y: 0, width: 1000, height: 1000 },
+      { id: 'inner', type: 'group', label: '  Inner ', x: 100, y: 100, width: 400, height: 400 },
+      { id: 'blank', type: 'group', x: 600, y: 600, width: 300, height: 300 },
+      { id: 'a', type: 'file', file: 'A.md', x: 120, y: 120, width: 100, height: 100 },
+      { id: 'b', type: 'file', file: 'B.md', x: 900, y: 900, width: 100, height: 100 },
+      { id: 'c', type: 'file', file: 'C.md', x: 650, y: 650, width: 50, height: 50 },
+      { id: 'child', type: 'file', file: 'Maps/child.canvas', x: 2000, y: 2000, width: 400, height: 400 },
+    ],
+    edges: [],
+  };
+  const p = placementsOf('Maps/parent.canvas', data);
+  assert.deepEqual(p.get('A.md')[0].groups, [
+    { nodeId: 'inner', label: 'Inner' },
+    { nodeId: 'outer', label: 'Outer' },
+  ]);
+  assert.deepEqual(p.get('B.md')[0].groups, [{ nodeId: 'outer', label: 'Outer' }], 'touching the outer edge is inside');
+  assert.deepEqual(p.get('C.md')[0].groups.map((g) => g.nodeId), ['blank', 'outer']);
+  assert.equal(p.get('C.md')[0].groups[0].label, '', 'an unlabelled group reads as empty; the rows say unnamed group');
+  assert.equal(UNNAMED_GROUP, 'unnamed group');
+  assert.deepEqual(p.get('Maps/child.canvas')[0].groups, []);
+  assert.equal(p.get('Maps/child.canvas')[0].nodeId, 'child', 'a nested canvas is placed like a note');
+  assert.deepEqual(containingGroups({ id: 'x', type: 'file', x: 'nope' }, []), [], 'a card without a box is in no group');
 });

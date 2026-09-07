@@ -74,6 +74,15 @@
   stroke-width: 3.5;
 }
 
+/* A group's label keeps its screen size once the canvas is zoomed out
+   past the breakpoint where core hides card labels: the square of the
+   zoom multiplier is the inverse of the scale. The class on the wrapper
+   is the plugin's; the label is core's. */
+.icor-canvases-wrapper.mod-zoomed-out .canvas-group-label {
+  transform: translate(0, -100%) scale(calc(var(--zoom-multiplier) * var(--zoom-multiplier)));
+  max-width: none;
+}
+
 /* The tool group positions its flyouts. */
 .icor-canvases-tools {
   position: relative;
@@ -309,6 +318,31 @@
 .icor-canvases-canvas-icon,
 .icor-canvases-row-kind {
   color: var(--text-muted);
+}
+
+.icor-canvases-canvas-group {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-2);
+  margin-left: var(--size-4-4);
+  padding: var(--size-2-1) var(--size-2-2);
+  border-radius: var(--radius-s);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  cursor: var(--cursor);
+  width: fit-content;
+}
+
+.icor-canvases-canvas-group:hover,
+.icor-canvases-canvas-group:focus-visible {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.icor-canvases-canvas-group-icon svg {
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+  display: block;
 }
 
 .icor-canvases-rows {
