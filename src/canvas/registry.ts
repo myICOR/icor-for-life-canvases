@@ -72,6 +72,11 @@ export class CanvasRegistry {
     return null;
   }
 
+  /* The theme changed: the minimaps read their colours again. */
+  refreshTheme(): void {
+    for (const binding of this.bindings.values()) binding.minimap?.redraw();
+  }
+
   /* A canvas view loaded another file: the breadcrumb follows. */
   refreshFiles(): void {
     for (const binding of this.bindings.values()) binding.nested?.render();

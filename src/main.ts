@@ -51,6 +51,7 @@ export default class CanvasesPlugin extends Plugin {
       this.backlinks.sweep();
     };
     this.registerEvent(this.app.workspace.on('layout-change', sweep));
+    this.registerEvent(this.app.workspace.on('css-change', () => this.registry.refreshTheme()));
     this.registerEvent(this.app.workspace.on('active-leaf-change', sweep));
     this.registerEvent(
       this.app.workspace.on('file-open', () => {

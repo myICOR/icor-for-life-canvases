@@ -41,6 +41,10 @@ export class Minimap {
   private readonly restores: (() => void)[] = [];
   private unhook: (() => void) | null = null;
   private fit: Fit | null = null;
+  /* The accent, read with the node colours in drawNodes (a style read per
+     node redraw, never per animated frame); a theme change redraws
+     through css-change. */
+  private accent = '';
   private frame = 0;
   private readonly redrawNodes = debounce(() => this.drawNodes(), NODE_DEBOUNCE_MS, true);
 
@@ -89,6 +93,11 @@ export class Minimap {
     }
     this.drawNodes();
     this.host.log('minimap on');
+  }
+
+  /* A full redraw, for a theme change. */
+  redraw(): void {
+    this.redrawNodes();
   }
 
   dispose(): void {
@@ -148,6 +157,7 @@ export class Minimap {
     const styles = this.panel.win.getComputedStyle(this.canvas.wrapperEl);
     const palette = PALETTE_VARS.map((v) => styles.getPropertyValue(v).trim());
     const muted = styles.getPropertyValue('--text-faint').trim() || 'gray';
+    this.accent = styles.getPropertyValue('--color-accent').trim() || 'currentColor';
     const radius = Math.max(1, 3 * Math.min(1, scale * 40));
     const groups: CanvasNode[] = [];
     for (const node of this.canvas.nodes.values()) {
@@ -202,8 +212,7 @@ export class Minimap {
     const fit = this.fit;
     if (!fit) return;
     const view = this.canvas.getViewportBBox();
-    const styles = this.panel.win.getComputedStyle(this.canvas.wrapperEl);
-    ctx.strokeStyle = styles.getPropertyValue('--color-accent').trim() || 'currentColor';
+    ctx.strokeStyle = this.accent || 'currentColor';
     ctx.lineWidth = 1.5;
     ctx.strokeRect(
       view.minX * fit.scale + fit.offsetX,
