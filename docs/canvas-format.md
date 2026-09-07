@@ -84,7 +84,24 @@ default style for `icorStyle.version > 1` and `withShape` returns its
 input, so an older build's shape or colour choice on such a card
 changes nothing. A missing `version` reads as 1.
 
-## 5. Coexistence
+## 5. Stability of the names, and who reads them
+
+The three names are a contract: `icorShape` and `icorStyle` on a node,
+`metadata.icorCanvases` at the top level. They do not change. New
+members may be added under them at any time; an existing member changes
+its meaning, type or name only with a `version` bump and a migration
+written down in this file (the way `icorStyle.stroke` left in 0.3.0,
+before any reader shipped).
+
+Readers other than this plugin:
+
+- **ICOR for Life - PDF Annotation** reads all three and never writes
+  them.
+
+A reader must treat a missing `version` as 1 and a higher `version` than
+it knows as "not for me".
+
+## 6. Coexistence
 
 The plugin's writes preserve, byte for byte:
 

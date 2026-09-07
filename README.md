@@ -22,8 +22,12 @@ desktop and mobile. The core Canvas plugin must be on.
 ## The controls column and the tools
 
 Open a canvas. The canvas's controls column sits at the left edge (the
-setting "Controls column side" puts it back on the right). Its last
-group is the plugin's, styled like the zoom and undo controls above it:
+setting "Controls column side" puts it back on the right). Under the
+canvas's own settings and undo controls comes the plugin's tool group,
+and under that the canvas's card menu (add card, add note, add media),
+moved up from the bottom of the canvas with its drag-to-place behaviour
+intact. The zoom controls sit at the bottom right instead (next
+section).
 
 | Control | Key | What it does |
 | --- | --- | --- |
@@ -61,6 +65,20 @@ Commands, with no default hotkey: **Select tool**, **Hand tool**, **Pen
 tool** (a toggle), **Eraser tool**, **Group the selection**, **Undo last
 stroke**. All work on the canvas in the most recently focused tab.
 
+## Zoom bar and minimap
+
+Bottom right: **fit**, **zoom out**, the **live percentage**, **zoom
+in**. Click the percentage for a flyout: show or hide the minimap (or
+press M), fit to screen, 50%, 100%, 200%, 400%; a preset zooms around
+the centre of the view. Commands: **Zoom to fit**, **Zoom to 100%**,
+**Toggle minimap**.
+
+Above the bar, the **minimap**: every card as a small rounded rectangle
+in its colour, groups as outlines, the current view as a rectangle.
+Click or drag on the map to move the view to that point; scroll on it
+to zoom. Off under Settings, Canvas, "Minimap", or with M while the
+canvas has focus. It leaves the page entirely when off.
+
 ### Where the ink is saved
 
 In the .canvas file itself, under one top-level key:
@@ -89,19 +107,22 @@ more buttons:
 | Button | What it opens |
 | --- | --- |
 | Switch shape | A grid of ten: card (the default), rectangle, rounded rectangle, ellipse, circle, diamond, triangle, parallelogram, speech bubble, star. |
-| Outline colour | The six canvas colours, the card's own, none, and a custom colour. |
-| Fill colour | The same choices for the background. |
+| Fill colour | The six canvas colours, the card's own, none, and a custom colour. |
+| Text colour | The six canvas colours, the card's own, and a custom colour. On a filled card without one, the text is dark or light by the fill's brightness. |
 
-The text stays centred and inside the visible area of the shape. The
-card's context menu (right-click, long press) has a **Shape** item with
-the same list for the keyboard. Note cards keep their toolbar from 0.1.0
-and are not shaped.
+The outline is the card's own colour: the canvas's palette button, as
+for any card. The shape is drawn behind the text, the text is inset into
+the shape and centred, and the editor shows the fill through when you
+double-click to edit. The card's context menu (right-click, long press)
+has a **Shape** item with the same list for the keyboard. Note cards keep
+their toolbar from 0.1.0 and are not shaped.
 
 Where it is saved: on the card's own entry in the .canvas file, as
-`"icorShape": "diamond"` and `"icorStyle": { "stroke": "1", "fill":
-"#ffcc00" }`. Obsidian keeps unknown keys on a card across a load, a save,
-undo, redo, copy and paste. A card with the default shape and no colours
-carries neither key.
+`"icorShape": "diamond"` and `"icorStyle": { "version": 1, "fill": "3",
+"text": "#ffcc00" }`. Obsidian keeps unknown keys on a card across a
+load, a save, undo, redo, copy and paste. A card with the default shape
+and no colours carries neither key. Every key the plugin writes, with
+its rules, is in `docs/canvas-format.md`.
 
 ## Canvases inside canvases
 
@@ -184,6 +205,7 @@ second. A canvas that sits on another canvas is placed like a note.
 | --- | --- | --- |
 | Open in the right sidebar with | Cmd on macOS, Ctrl elsewhere | The key held while clicking a note card. Alt is the alternative. |
 | Controls column side | Left | Which edge the canvas's controls column, and the tool group in it, sits on. |
+| Minimap | On | The map above the zoom bar. |
 | Toolbar on note cards | On | The two buttons and the pill on every note card. |
 | Show canvases under the note | On | The block at the end of every note. |
 | Pen colour | Default | The colour a canvas starts with when you pick up the pen. |

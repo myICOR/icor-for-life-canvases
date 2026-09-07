@@ -4,6 +4,53 @@ All notable changes to ICOR for Life - Canvases.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - Unreleased
+
+Tom's second round, plus five findings on the shapes and Flint's review
+of 0.2.0.
+
+### Added
+- **The card menu in the column.** The canvas's bottom menu (add card,
+  add note, add media) sits in the controls column under the tool group,
+  the same elements with their drag-to-place behaviour; the bottom of
+  the canvas is clear.
+- **Zoom bar at the bottom right.** Fit, zoom out, the live percentage,
+  zoom in. The percentage follows the zoom and opens a flyout: show or
+  hide the minimap (M), fit to screen, 50, 100, 200 and 400 percent,
+  each zooming around the centre of the view. Commands: Zoom to fit,
+  Zoom to 100%, Toggle minimap.
+- **Minimap.** A small map above the zoom bar: every card in its colour,
+  groups as outlines, the current view as a rectangle. Click or drag on
+  it to move the view, scroll on it to zoom. Toggled by the flyout, the
+  M key, the command and a setting (on by default). Its node layer
+  redraws only when cards change; its view rectangle redraws only while
+  the canvas itself animates.
+- **Text colour** on text cards, and on a filled card without one, dark
+  or light text picked from the fill's luminance.
+- `docs/canvas-format.md`: every key the plugin writes, its type,
+  default, versioning, and the rule that other plugins' keys are kept;
+  a test holds the plugin to it.
+
+### Changed
+- **One outline control.** The canvas's own palette sets the card
+  colour, which is the outline; the separate outline flyout is gone. A
+  0.2.0 outline colour becomes the card's colour on the next save.
+- **Shapes are drawn behind the text.** The shape is a layer under the
+  content; the text is inset into the shape and centred, and the editor
+  shows the fill through. `icorStyle` carries a version and a colour
+  change never touches a shape this build does not know.
+- Opening any flyout closes the one that is open, the canvas's own
+  colour submenu included.
+
+### Fixed (Flint's review of 0.2.0)
+- Exports as image no longer carry the breadcrumb, the card toolbars,
+  the minimap or the zoom bar.
+- Shift with V, H, P or E reaches Obsidian's own hotkeys; a flyout
+  choice returns focus to the canvas; the hand pan releases its
+  listener; the typed name of a new canvas is normalised; wraps left
+  under another plugin's do nothing after unload; the command copes with
+  the core backlinks plugin being off.
+
 ## [0.2.0] - Unreleased
 
 Tom tested 0.1.0 and asked for seven things. All seven, plus two live
@@ -136,5 +183,6 @@ asks from the same day.
   greps that re-verify it on the next Obsidian release.
 - Whether "Export as image" includes the ink is unverified.
 
+[0.3.0]: docs/releases/0.3.0.md
 [0.2.0]: docs/releases/0.2.0.md
 [0.1.0]: docs/releases/0.1.0.md

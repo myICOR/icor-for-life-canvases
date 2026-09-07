@@ -27,6 +27,10 @@ const TEXT_VAR = '--icor-canvases-text';
 const PALETTE_VAR = (n: string): string => `--canvas-color-${n}`;
 const OUTLINE_CLASS = 'icor-canvases-shape-outline';
 const BUTTON_CLASS = 'icor-canvases-shape-button';
+/* On the editor iframe's body: the editor paints no background of its own
+   over the shape's fill, and its text takes the card's colour. */
+const EDITOR_BODY_CLASS = 'icor-canvases-in-shape';
+const EDITOR_TEXT_VAR = '--icor-canvases-editor-text';
 const READONLY = 'This canvas is read-only.';
 
 export interface ShapesHost {
@@ -123,16 +127,49 @@ export class NodeShapes {
     }
     this.migrate(node);
     const apply = (): void => this.apply(node);
-    this.restores.set(
-      node,
-      around(node, 'setData', (original) => {
-        return function (this: CanvasNode, data) {
-          original.call(this, data);
-          apply();
-        };
-      }),
-    );
+    const restoreSetData = around(node, 'setData', (original) => {
+      return function (this: CanvasNode, data) {
+        original.call(this, data);
+        apply();
+      };
+    });
+    /* The editor is an iframe with its own document (1.13.7): it is
+       marked when editing starts, on the frame after the mount. */
+    const markEditor = (): void => this.markEditor(node);
+    const restoreEditing =
+      typeof node.startEditing === 'function'
+        ? around(node, 'startEditing', (original) => {
+            return function (this: CanvasNode) {
+              original?.call(this);
+              markEditor();
+            };
+          })
+        : null;
+    this.restores.set(node, () => {
+      restoreEditing?.();
+      restoreSetData();
+    });
     this.apply(node);
+  }
+
+  /* The editor's document: a class on its body and the card's text
+     colour as a variable, read from the card's container. Retried over a
+     few frames while the iframe mounts; nothing per frame after that. */
+  private markEditor(node: CanvasNode, attempt = 0): void {
+    if (this.disposed) return;
+    const iframe = node.nodeEl.querySelector<HTMLIFrameElement>('iframe.embed-iframe');
+    const body = iframe?.contentDocument?.body;
+    if (!body) {
+      if (attempt < 30) node.nodeEl.win.requestAnimationFrame(() => this.markEditor(node, attempt + 1));
+      return;
+    }
+    const style = readShape(node.unknownData);
+    const styled = style.shape !== 'card' || style.fill !== '' || style.text !== '';
+    body.toggleClass(EDITOR_BODY_CLASS, styled);
+    if (!styled) return;
+    const container = node.nodeEl.querySelector<HTMLElement>('.canvas-node-container');
+    const color = container ? node.nodeEl.win.getComputedStyle(container).color : '';
+    if (color) body.setCssProps({ [EDITOR_TEXT_VAR]: color });
   }
 
   /* A 0.2.0 outline colour becomes the card's own colour (when the card
@@ -166,6 +203,8 @@ export class NodeShapes {
     const contrast = style.text === '' && style.fill !== '' && style.fill !== 'transparent' ? this.contrastFor(style.fill) : null;
     el.toggleClass('icor-canvases-contrast-dark', contrast === 'dark');
     el.toggleClass('icor-canvases-contrast-light', contrast === 'light');
+    /* A card being edited while its style changes: the editor follows. */
+    if (el.hasClass('is-editing')) this.markEditor(node);
     const clipped = shape !== null && (CLIPPED_SHAPES as readonly string[]).includes(shape);
     let outline = el.querySelector<SVGSVGElement>(`:scope > .${OUTLINE_CLASS}`);
     if (clipped) {

@@ -34,6 +34,10 @@ export interface CanvasNode {
      canvas's own palette button writes it. */
   color?: string;
   setColor?(color: string, render?: boolean): void;
+  /* A text card's editor; on 1.13.7 it mounts an `iframe.embed-iframe`
+     inside the card, with its own document that receives the app's
+     stylesheets, the plugin's included. */
+  startEditing?(): void;
 }
 
 /* A file node carries `file` (a TFile once resolved, null before) and the

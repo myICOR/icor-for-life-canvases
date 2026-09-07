@@ -1,6 +1,6 @@
 # Architecture
 
-ICOR for Life - Canvases, 0.2.0. What the modules are, which of them
+ICOR for Life - Canvases, 0.3.0. What the modules are, which of them
 reach into Obsidian's unpublished canvas API, how the ink and the card
 styles are persisted, and what to re-check when Obsidian updates.
 
@@ -35,7 +35,9 @@ the development Mac on 2026-09-06 and 2026-09-07:
 | `src/canvas/selectionMenu.ts` | One wrap of the selection toolbar's `render` per canvas, shared. | `menu`, `menu.menuEl`, `menu.render(rebuild)` |
 | `src/canvas/nodeHook.ts` | One wrap of `addNode` per canvas, shared by the toolbar and the shapes. | `addNode` |
 | `src/canvas/shapeModel.ts` | Pure: shapes, colours, `readShape`, `withShape`, the outline polygons. | none |
-| `src/canvas/shapes.ts` | Shapes and colours on text cards: the toolbar buttons, the flyouts, the node-menu item, the per-node `setData` wrap, the DOM apply. | `selection`, `readonly`, `requestSave`, `node.unknownData`, `node.setData`, `node.text`, `nodeEl`, `.canvas-node-container`, `canvas:node-menu`, `.canvas-menu` buttons |
+| `src/canvas/shapes.ts` | Shapes and colours on text cards: the toolbar buttons, the flyouts, the node-menu item, the per-node `setData` and `startEditing` wraps, the DOM apply, the editor iframe's body marker, the contrast fallback. | `selection`, `readonly`, `requestSave`, `node.unknownData`, `node.setData`, `node.startEditing`, `node.color`, `node.setColor`, `node.text`, `nodeEl`, `.canvas-node-container`, `iframe.embed-iframe`, `canvas:node-menu`, `.canvas-menu` buttons |
+| `src/canvas/layout.ts` | The column layout: the card menu moved into the column, the zoom items moved into a bottom-right bar with the live percentage and its flyout. Core's elements are moved, not recreated, and put back on dispose. | `canvasControlsEl`, `cardMenuEl`, the zoom items by icon, `zoomBy`, `zoomToFit`, `tZoom`, `markViewportChanged` |
+| `src/canvas/minimap.ts` | The minimap: two stacked canvas elements; the node layer on node changes (debounced), the view rectangle on `requestFrame`. | `nodes`, `getBBox`, `color`, `getViewportBBox`, `panTo`, `zoomBy`, `requestFrame`, `markMoved`, `markDirty`, `removeNode`, `setData`, `applyHistory` |
 | `src/canvas/nested.ts` | "New canvas here" through the `showCreationMenu` wrap, the name modal, the breadcrumb chip. | `showCreationMenu`, `createFileNode`, `readonly`, `view.file`, `wrapperEl` |
 | `src/canvas/geometry.ts` | Pure: boxes, union, padding, containment, area. | none |
 | `src/canvas/inkModel.ts` | Pure: widths, the stroke builder, the SVG path, the eraser hit test. | none |
@@ -122,7 +124,8 @@ against the next bundle before shipping on it.
 | `canvas.getViewportBBox()` | function | The view in canvas units, for the minimap rectangle. | `getViewportBBox=function(){var e=this.canvasRect` |
 | `canvas.markMoved(item)`, `markDirty(item)`, `removeNode(node)` | functions | Node changes; wrapped for the minimap's node layer. | `markMoved=function`, `markDirty=function(e){this.dirty.add(e)`, `removeNode=function(e){` |
 | The zoom items by icon: `lucide-plus`, `lucide-rotate-cw`, `lucide-maximize`, `lucide-minus` | DOM | How the layout finds the four zoom items in the second control group. | `Ag(e,"lucide-rotate-cw")` |
-| `node.color`, `node.setColor(color)` | property, function | The card's own colour; the 0.2.0 outline colour migrates into it. | `setColor=function(e,t){void 0===t&&(t=!1),e=Z8(e` |
+| `node.startEditing()`, `iframe.embed-iframe` | function, DOM | A text card's editor mounts an iframe with its own document that receives the app's stylesheets (the plugin's included) and mirrors the body classes; the plugin marks its body for a styled card. | `startEditing=function(){` (two hits: the text and the file card) and `"embed-iframe"` |
+| `node.color`, `node.setColor(color)` | property, function | The card's own colour; the 0.2.0 outline colour migrates into it. | `setColor=function(e,t){void 0===t&&(t=!1),e=Z8(e` (two hits: node and edge) |
 
 Not used, and known: the `canvas:edge-menu` and `canvas:selection-menu`
 events (not in the typings), `canvas.getContainingNodes` (the index
