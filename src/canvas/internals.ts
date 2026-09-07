@@ -6,7 +6,7 @@
  * missing. Nothing outside this file names a private member without a
  * guard having passed first. */
 import { TFile } from 'obsidian';
-import type { View } from 'obsidian';
+import type { Menu, View } from 'obsidian';
 import type { CanvasEdgeData, CanvasFileData, CanvasNodeData } from './format';
 import { degrade } from '../log';
 
@@ -88,6 +88,10 @@ export interface Canvas {
   deselectAll(): void;
   addNode(node: CanvasNode): void;
   panBy(dx: number, dy: number): void;
+  /* The items of the background context menu (and of the Mod-drag menu),
+     built into a public Menu; `size` is set when a box was dragged. */
+  showCreationMenu(menu: Menu, pos: { x: number; y: number }, size?: { width: number; height: number }): void;
+  createFileNode(options: { pos: { x: number; y: number }; size?: { width: number; height: number }; file: TFile; subpath?: string; save?: boolean; focus?: boolean }): CanvasNode;
   createGroupNode(options: { pos: { x: number; y: number }; size?: { width: number; height: number }; label?: string; save?: boolean; focus?: boolean }): CanvasNode;
   menu?: CanvasMenu;
 }
@@ -141,6 +145,8 @@ const MEMBERS: Record<string, MemberKind> = {
   deselectAll: 'function',
   addNode: 'function',
   panBy: 'function',
+  showCreationMenu: 'function',
+  createFileNode: 'function',
   createGroupNode: 'function',
   menu: 'object',
 };

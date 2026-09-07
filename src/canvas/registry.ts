@@ -9,6 +9,7 @@ import type { App } from 'obsidian';
 import { InkLayer, INK_MEMBERS } from './ink';
 import { asCanvasView, requireCanvas } from './internals';
 import type { Canvas, CanvasView } from './internals';
+import { NestedCanvases } from './nested';
 import { NodeToolbars } from './nodeToolbar';
 import { wireModifierOpen } from './openInSidebar';
 import { SelectionMenuHook } from './selectionMenu';
@@ -30,6 +31,7 @@ export interface CanvasBinding {
   ink: InkLayer | null;
   tools: ToolControls | null;
   toolbars: NodeToolbars | null;
+  nested: NestedCanvases | null;
   selection: SelectionMenuHook | null;
   disposers: (() => void)[];
 }
@@ -52,6 +54,11 @@ export class CanvasRegistry {
     return view ? (this.bindings.get(view.canvas) ?? null) : null;
   }
 
+  /* A canvas view loaded another file: the breadcrumb follows. */
+  refreshFiles(): void {
+    for (const binding of this.bindings.values()) binding.nested?.render();
+  }
+
   applySettings(): void {
     const s = this.host.settings();
     for (const binding of this.bindings.values()) {
@@ -69,7 +76,7 @@ export class CanvasRegistry {
     const host = this.host;
     const { app, index } = host;
     const canvas = view.canvas;
-    const binding: CanvasBinding = { view, canvas, ink: null, tools: null, toolbars: null, selection: null, disposers: [] };
+    const binding: CanvasBinding = { view, canvas, ink: null, tools: null, toolbars: null, nested: null, selection: null, disposers: [] };
     const s = host.settings();
     /* The plugin's own class on the wrapper scopes its stylesheet rules
        that reach a core element under it (the group label). */
@@ -97,6 +104,10 @@ export class CanvasRegistry {
       binding.toolbars = new NodeToolbars(canvas, { app, index, enabled: () => host.settings().toolbar, log: (m) => host.log(m) });
       binding.toolbars.attach();
     }
+    if (requireCanvas(canvas, ['view', 'readonly', 'wrapperEl', 'showCreationMenu', 'createFileNode'], 'Nested canvases')) {
+      binding.nested = new NestedCanvases(canvas, { app, index, log: (m) => host.log(m) });
+      binding.nested.attach();
+    }
     if (requireCanvas(canvas, ['nodes', 'view'], 'Open in the right sidebar')) {
       binding.disposers.push(wireModifierOpen(app, canvas, { modifier: () => host.settings().modifier, log: (m) => host.log(m) }));
     }
@@ -112,6 +123,7 @@ export class CanvasRegistry {
     binding.tools?.dispose();
     binding.ink?.dispose();
     binding.toolbars?.dispose();
+    binding.nested?.dispose();
     binding.selection?.dispose();
     for (const dispose of binding.disposers) dispose();
     this.host.log(`canvas released: ${binding.view.file?.path ?? '(no file)'}`);

@@ -53,6 +53,7 @@ export default class CanvasesPlugin extends Plugin {
       this.app.workspace.on('file-open', () => {
         this.footers.sweep();
         this.backlinks.sweep();
+        this.registry.refreshFiles();
       }),
     );
     this.registerMarkdownPostProcessor(() => {
