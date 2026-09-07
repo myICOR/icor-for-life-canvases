@@ -47,7 +47,7 @@ the development Mac on 2026-09-06 and 2026-09-07:
 | `src/index/parse.ts` | Pure: one canvas file to placements, connections and containing groups. | none (file format only) |
 | `src/index/CanvasIndex.ts` | Every canvas in the vault, kept fresh, with `subscribe`. | none |
 | `src/views/rows.ts` | The rows both surfaces share. | none |
-| `src/views/backlinksSection.ts` | The "Canvases" section inside the core Backlinks pane. | `.backlink-pane`, the pane's header classes, `view.update` |
+| `src/views/backlinksSection.ts` | The "Canvases" section inside the core Backlinks pane; re-rendered on the pane's direct `update` (its file load) and on the plugin's own sweeps, which compare the file. | `.backlink-pane`, the pane's header classes, `view.update` |
 | `src/views/footer.ts` | The block under a note, placed after `.embedded-backlinks`. | `.embedded-backlinks`, `data-mode` |
 | `src/settings/*` | The settings model, the table, the declared settings tab. | none |
 | `src/log.ts` | Debug channel and degrade channel. | none |
@@ -113,6 +113,16 @@ against the next bundle before shipping on it.
 | `--layer-cover` (5), `--layer-menu` (65) | CSS variables | The controls column's layer and the one the flyouts use above it. | `--layer-cover: 5`, `--layer-menu: 65` in app.css |
 | view type `backlink`, `.backlink-pane`, `.tree-item-self.is-clickable` header, `.search-result-container`, `view.update()` | view | The core Backlinks pane and its two section headers; the Canvases section is a third built the same way, and `update` (the pane's own refresh on a file change) is wrapped on the instance. `view.file` is public. | `Q3="backlink"`, `createDiv("backlink-pane")`, `update=function(){this.leaf.updateHeader();var e=this.backlink;e.file=this.file` |
 | `is-collapsed` on a header and its `.collapse-icon` | CSS | How the pane collapses a section. | `function cI(e,t){e.toggleClass("is-collapsed",t)` |
+| `--canvas-node-width`, `--canvas-node-height` | CSS variables | Set on `.canvas-node` in the node render; the shape insets and the circle read them. | `"--canvas-node-width"` |
+| `.canvas-wrapper.is-screenshotting` | CSS | Set for "Export as image"; core hides its controls under it, the plugin hides its chrome (chip, toolbars, minimap, zoom bar). | `addClass("is-screenshotting")` |
+| `canvas.canvasControlsEl`, `canvas.cardMenuEl` | elements | The controls column and the bottom card menu; the layout moves the menu into the column and the zoom items out of it, and puts both back on unload. | `this.canvasControlsEl=n.createDiv("canvas-controls"` and `this.cardMenuEl=n.createDiv("canvas-card-menu"` |
+| `canvas.zoomBy(delta, center?)`, `zoomToFit()`, `panTo(x, y)` | functions | The zoom bar, the presets, the minimap. | `zoomBy=function(e,t){var n=this.tZoom`, `zoomToFit=function`, `panTo=function(e,t){this.x=e` |
+| `canvas.markViewportChanged()` | function | Every viewport change requests a frame through it; wrapped for the live percentage. | `markViewportChanged=function(){this.viewportChanged=!0` |
+| `canvas.requestFrame()` | function | Called once per animated frame while the viewport or a drag animates, never while idle; wrapped for the minimap's viewport rectangle. | `requestFrame=function(e){var t=this;this.frame` |
+| `canvas.getViewportBBox()` | function | The view in canvas units, for the minimap rectangle. | `getViewportBBox=function(){var e=this.canvasRect` |
+| `canvas.markMoved(item)`, `markDirty(item)`, `removeNode(node)` | functions | Node changes; wrapped for the minimap's node layer. | `markMoved=function`, `markDirty=function(e){this.dirty.add(e)`, `removeNode=function(e){` |
+| The zoom items by icon: `lucide-plus`, `lucide-rotate-cw`, `lucide-maximize`, `lucide-minus` | DOM | How the layout finds the four zoom items in the second control group. | `Ag(e,"lucide-rotate-cw")` |
+| `node.color`, `node.setColor(color)` | property, function | The card's own colour; the 0.2.0 outline colour migrates into it. | `setColor=function(e,t){void 0===t&&(t=!1),e=Z8(e` |
 
 Not used, and known: the `canvas:edge-menu` and `canvas:selection-menu`
 events (not in the typings), `canvas.getContainingNodes` (the index

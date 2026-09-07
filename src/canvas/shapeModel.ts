@@ -38,6 +38,10 @@ export const OUTLINE_POINTS: Readonly<Record<string, string>> = {
 
 export const SHAPE_KEY = 'icorShape';
 export const STYLE_KEY = 'icorStyle';
+/* Written into icorStyle; a card whose style carries a higher version
+   was styled by a newer build and is read as default and never
+   rewritten, the way the ink is versioned. */
+export const SHAPE_VERSION = 1;
 
 /* A colour for the fill or the text: '' (the card's own), '1' to '6'
    (the canvas palette), 'transparent' (fill only), or a hex colour. The
@@ -72,9 +76,16 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
 
+/* True when the card's style was written by a newer build. */
+export function isNewerShape(data: unknown): boolean {
+  if (!isRecord(data)) return false;
+  const style = data[STYLE_KEY];
+  return isRecord(style) && typeof style.version === 'number' && style.version > SHAPE_VERSION;
+}
+
 /* The style on a node's data; anything unknown reads as the default. */
 export function readShape(data: unknown): ShapeStyle {
-  if (!isRecord(data)) return { ...DEFAULT_STYLE };
+  if (!isRecord(data) || isNewerShape(data)) return { ...DEFAULT_STYLE };
   const shape = isShape(data[SHAPE_KEY]) ? data[SHAPE_KEY] : 'card';
   const style = data[STYLE_KEY];
   const fill = isRecord(style) && isShapeColor(style.fill) ? style.fill : '';
@@ -92,17 +103,43 @@ export function legacyStroke(data: unknown): string | null {
   return typeof stroke === 'string' && (PALETTE.includes(stroke) || isHexColor(stroke)) ? stroke : '';
 }
 
-/* A new data object with the style applied; default values remove their
-   keys so an untouched card carries nothing. Never mutates `data`. */
+/* A new data object with the patch applied and nothing else touched: a
+   key the patch does not name keeps whatever value it has, including a
+   shape or a style member this build does not know, so an older build
+   changing a colour never wipes a newer build's shape. Default values
+   remove their keys so an untouched card carries nothing. A card styled
+   by a newer build comes back unchanged. Never mutates `data`. */
 export function withShape(data: Record<string, unknown>, patch: Partial<ShapeStyle>): Record<string, unknown> {
-  const current = readShape(data);
-  const next: ShapeStyle = { ...current, ...patch };
+  if (isNewerShape(data)) return data;
   const out: Record<string, unknown> = { ...data };
-  if (next.shape === 'card') delete out[SHAPE_KEY];
-  else out[SHAPE_KEY] = next.shape;
-  const style: Record<string, string> = {};
-  if (next.fill) style.fill = next.fill;
-  if (next.text) style.text = next.text;
+  if ('shape' in patch) {
+    if (!patch.shape || patch.shape === 'card') delete out[SHAPE_KEY];
+    else out[SHAPE_KEY] = patch.shape;
+  }
+  const touchesStyle = 'fill' in patch || 'text' in patch;
+  if (touchesStyle) {
+    const style: Record<string, unknown> = isRecord(data[STYLE_KEY]) ? { ...data[STYLE_KEY] } : {};
+    if ('fill' in patch) {
+      if (patch.fill) style.fill = patch.fill;
+      else delete style.fill;
+    }
+    if ('text' in patch) {
+      if (patch.text) style.text = patch.text;
+      else delete style.text;
+    }
+    delete style.version;
+    if (Object.keys(style).length === 0) delete out[STYLE_KEY];
+    else out[STYLE_KEY] = { version: SHAPE_VERSION, ...style };
+  }
+  return out;
+}
+
+/* The 0.2.0 outline key, removed; the rest of the style is kept. */
+export function withoutLegacyStroke(data: Record<string, unknown>): Record<string, unknown> {
+  if (!isRecord(data[STYLE_KEY]) || !('stroke' in data[STYLE_KEY])) return data;
+  const style: Record<string, unknown> = { ...data[STYLE_KEY] };
+  delete style.stroke;
+  const out: Record<string, unknown> = { ...data };
   if (Object.keys(style).length === 0) delete out[STYLE_KEY];
   else out[STYLE_KEY] = style;
   return out;

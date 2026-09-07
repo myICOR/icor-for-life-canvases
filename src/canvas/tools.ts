@@ -178,7 +178,7 @@ export class ToolControls {
   }
 
   private onKeydown(evt: KeyboardEvent): void {
-    if (evt.repeat || evt.metaKey || evt.ctrlKey || evt.altKey || Flyout.isOpen) return;
+    if (evt.repeat || evt.metaKey || evt.ctrlKey || evt.altKey || evt.shiftKey || Flyout.isOpen) return;
     const key = evt.key.toLowerCase();
     const tool = TOOL_KEYS[key];
     if (!tool && key !== 'm') return;
@@ -230,6 +230,7 @@ export class ToolControls {
     const end = (): void => {
       controller.abort();
       surface.removeClass('is-panning');
+      this.abort.signal.removeEventListener('abort', end);
     };
     surface.addEventListener(
       'pointermove',

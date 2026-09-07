@@ -131,6 +131,9 @@ export class Flyout {
     if (current === this) current = null;
     this.abort.abort();
     this.options.anchor.removeClass('is-active');
+    /* Focus goes back to the anchor, so the canvas keeps the keyboard
+       (copy, paste and Delete test the active element). */
+    if (this.el.contains(this.el.doc.activeElement)) this.options.anchor.focus();
     this.el.detach();
   }
 }

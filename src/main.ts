@@ -6,7 +6,7 @@
  * which canvases the note is on and what its card is connected to there.
  * The canvas API Obsidian does not publish is reached through one guarded
  * adapter (src/canvas/internals.ts). */
-import { Notice, Plugin, TFile } from 'obsidian';
+import { FileView, Notice, Plugin, TFile } from 'obsidian';
 import { CanvasRegistry } from './canvas/registry';
 import { registerNodeMenu } from './canvas/shapes';
 import type { Tool } from './canvas/tools';
@@ -277,6 +277,13 @@ export default class CanvasesPlugin extends Plugin {
       return;
     }
     await leaf.setViewState({ type: BACKLINK_VIEW_TYPE, active: true });
+    /* With the core Backlinks plugin off the type is unknown and the leaf
+       shows a placeholder; the pane is a FileView when it is real. */
+    if (!(leaf.view instanceof FileView)) {
+      leaf.detach();
+      new Notice('Turn on the core backlinks plugin to see the canvases section.');
+      return;
+    }
     await workspace.revealLeaf(leaf);
     this.backlinks.sweep();
   }

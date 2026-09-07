@@ -18,7 +18,7 @@ import { around, hasUnknownData, isEdge, isTextNode, nodeColor, onNodeMenu } fro
 import type { Canvas, CanvasNode } from './internals';
 import type { NodeAddHook } from './nodeHook';
 import type { SelectionMenuHook } from './selectionMenu';
-import { CLIPPED_SHAPES, OUTLINE_POINTS, PALETTE, SHAPES, SHAPE_LABELS, colorLabel, colorValue, isHexColor, legacyStroke, prefersDarkText, readShape, relativeLuminance, withShape } from './shapeModel';
+import { CLIPPED_SHAPES, OUTLINE_POINTS, PALETTE, SHAPES, SHAPE_LABELS, colorLabel, colorValue, isHexColor, legacyStroke, prefersDarkText, readShape, relativeLuminance, withShape, withoutLegacyStroke } from './shapeModel';
 import type { Shape, ShapeColor, ShapeStyle } from './shapeModel';
 
 export const SHAPE_ATTR = 'data-icor-canvases-shape';
@@ -114,6 +114,13 @@ export class NodeShapes {
 
   private watch(node: CanvasNode): void {
     if (this.disposed || this.restores.has(node) || !isTextNode(node) || !hasUnknownData(node)) return;
+    /* Cards that left the canvas release their wrap. */
+    for (const [watched, restore] of this.restores) {
+      if (!this.canvas.nodes.has(watched.id)) {
+        restore();
+        this.restores.delete(watched);
+      }
+    }
     this.migrate(node);
     const apply = (): void => this.apply(node);
     this.restores.set(
@@ -134,7 +141,7 @@ export class NodeShapes {
     const stroke = legacyStroke(node.unknownData);
     if (stroke === null) return;
     if (stroke && nodeColor(node) === '' && typeof node.setColor === 'function') node.setColor(stroke);
-    node.unknownData = withShape(node.unknownData, {});
+    node.unknownData = withoutLegacyStroke(node.unknownData);
     this.host.log(`shape: outline colour migrated on ${node.id}`);
   }
 

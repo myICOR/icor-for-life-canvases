@@ -9,7 +9,7 @@
  * instance: `onContextMenu` looks `showCreationMenu` up at call time
  * (1.13.7), so the wrap sees every background menu and the Mod-drag
  * menu. */
-import { Keymap, Modal, Notice, Setting, setIcon, setTooltip } from 'obsidian';
+import { Keymap, Modal, Notice, Setting, normalizePath, setIcon, setTooltip } from 'obsidian';
 import type { App, Menu, TFile } from 'obsidian';
 import { around } from './internals';
 import type { Canvas } from './internals';
@@ -95,6 +95,7 @@ export class NestedCanvases {
   private readonly abort = new AbortController();
   /* Null until the first render, so an empty first set still hides the chip. */
   private renderedKey: string | null = null;
+  private disposed = false;
 
   constructor(
     private readonly canvas: Canvas,
@@ -105,7 +106,11 @@ export class NestedCanvases {
 
   attach(): void {
     const canvas = this.canvas;
-    const addItems = (menu: Menu, pos: Pos, size?: Size): void => this.addItems(menu, pos, size);
+    const addItems = (menu: Menu, pos: Pos, size?: Size): void => {
+      /* A wrapper left installed under another plugin's later wrap must
+         do nothing once this binding is gone. */
+      if (!this.disposed) this.addItems(menu, pos, size);
+    };
     this.restore = around(canvas, 'showCreationMenu', (original) => {
       return function (this: Canvas, menu: Menu, pos: Pos, size?: Size) {
         original.call(this, menu, pos, size);
@@ -155,6 +160,7 @@ export class NestedCanvases {
   }
 
   dispose(): void {
+    this.disposed = true;
     this.abort.abort();
     this.unsubscribe?.();
     this.restore?.();
@@ -185,7 +191,7 @@ export class NestedCanvases {
     }
     const folder = parent.parent?.path ?? '';
     const prefix = folder && folder !== '/' ? `${folder}/` : '';
-    const pathFor = (name: string): string => `${prefix}${name}.canvas`;
+    const pathFor = (name: string): string => normalizePath(`${prefix}${name}.canvas`);
     const taken = (name: string): boolean => host.app.vault.getAbstractFileByPath(pathFor(name)) !== null;
     new NameModal(host.app, childName(parent.basename, taken), (name) => {
       void this.create(pathFor(name), pos, size);

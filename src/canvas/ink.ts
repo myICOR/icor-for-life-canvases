@@ -129,6 +129,7 @@ export class InkLayer {
   /* Draws every stroke in the canvas's data afresh. Cheap at the sizes a
      hand draws; called after every change and every load. */
   render(): void {
+    if (this.abort.signal.aborted) return;
     const { canvasEl } = this.canvas;
     if (this.overlay.parentElement !== canvasEl) canvasEl.appendChild(this.overlay);
     this.overlay.empty();
