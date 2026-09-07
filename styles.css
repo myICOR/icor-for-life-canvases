@@ -642,14 +642,13 @@
 }
 
 /* Shapes on a text card. The attribute sits on the card's element. The
-   shape itself (fill, border, rounding, clip) is drawn by a layer behind
-   the content: the container's ::before pseudo-element, so the text is
-   never clipped; the container itself goes transparent and its content
-   is inset into the shape's inscribed rectangle by a per-shape padding
-   table on the card's own size variables, and centred. A preview in the
-   shape flyout carries the same attribute on a small box. The five cut
-   shapes get an SVG outline over the card where the clip hides the
-   border. */
+   shape is drawn behind the content: the rectangle and the rounded
+   rectangle as the container's ::before box, every other shape as an SVG
+   layer (a 0 to 100 box stretched to the card, fill plus a non-scaling
+   stroke) that is the card's first child, so nothing is ever clipped
+   and nothing is cut by a mask. The container goes transparent and its
+   content is inset into the shape's inscribed rectangle by a per-shape
+   padding table on the card's own size variables, and centred. */
 .icor-canvases-wrapper .canvas-node[data-icor-canvases-shape] > .canvas-node-container {
   background-color: transparent;
   border-color: transparent;
@@ -658,17 +657,53 @@
   text-align: center;
 }
 
-.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape] > .canvas-node-container::before {
+/* The box shapes: the layer is the container's ::before. Its border
+   width and style are the outline style; the colour is the card's own. */
+.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="rectangle"] > .canvas-node-container::before,
+.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="rounded"] > .canvas-node-container::before {
   content: '';
   position: absolute;
   left: 0;
   top: 0;
   width: 100%;
   height: 100%;
-  border: var(--border-width) solid var(--canvas-color);
-  border-radius: var(--radius-m);
+  border: calc(var(--border-width) * var(--icor-canvases-stroke-width, 2) * var(--zoom-multiplier)) var(--icor-canvases-stroke-style, solid) var(--canvas-color);
   background-color: var(--icor-canvases-fill, var(--background-primary));
   box-shadow: var(--shadow-stationary);
+}
+
+.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="rectangle"] > .canvas-node-container::before,
+.icor-canvases-shape-preview[data-icor-canvases-shape="rectangle"] > .icor-canvases-shape-preview-box {
+  border-radius: 0;
+}
+
+.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="rounded"] > .canvas-node-container::before,
+.icor-canvases-shape-preview[data-icor-canvases-shape="rounded"] > .icor-canvases-shape-preview-box {
+  border-radius: var(--radius-xl);
+}
+
+/* The drawn shapes: the SVG layer behind the container. The stroke is
+   screen-constant (non-scaling) in the outline's width and dash, the
+   fill the card's fill colour or the theme's card background. */
+.icor-canvases-shape-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.icor-canvases-shape-layer > *,
+.icor-canvases-shape-preview-svg > * {
+  fill: var(--icor-canvases-fill, var(--background-primary));
+  stroke: var(--canvas-color);
+  stroke-width: var(--icor-canvases-stroke-width, 2);
+  stroke-dasharray: var(--icor-canvases-dash, none);
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
 }
 
 /* Core tints a coloured card's content box at 7 percent of its colour
@@ -684,14 +719,6 @@
 .icor-canvases-wrapper .canvas-node.is-focused[data-icor-canvases-shape].is-themed > .canvas-node-container {
   border-color: transparent;
   box-shadow: none;
-}
-
-/* Selection does not recolour the shape's own outline: the frame and its
-   handles carry the accent, the layer keeps the real colour. The border
-   width and style are the outline style. */
-.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape] > .canvas-node-container::before {
-  border-width: calc(var(--border-width) * var(--icor-canvases-stroke-width, 2) * var(--zoom-multiplier));
-  border-style: var(--icor-canvases-stroke-style, solid);
 }
 
 /* The content sits above the layer. */
@@ -735,30 +762,14 @@ html.icor-canvases-in-shape .cm-scroller {
   background-color: transparent;
 }
 
-.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="rectangle"] > .canvas-node-container::before,
-.icor-canvases-shape-preview[data-icor-canvases-shape="rectangle"] > .icor-canvases-shape-preview-box {
-  border-radius: 0;
-}
-
-.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="rounded"] > .canvas-node-container::before,
-.icor-canvases-shape-preview[data-icor-canvases-shape="rounded"] > .icor-canvases-shape-preview-box {
-  border-radius: var(--radius-xl);
-}
-
-.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="ellipse"] > .canvas-node-container::before,
-.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="circle"] > .canvas-node-container::before,
-.icor-canvases-shape-preview[data-icor-canvases-shape="ellipse"] > .icor-canvases-shape-preview-box,
-.icor-canvases-shape-preview[data-icor-canvases-shape="circle"] > .icor-canvases-shape-preview-box {
-  border-radius: 50%;
-}
-
+/* The insets: the content sits in each shape's inscribed rectangle. */
 .icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="ellipse"] > .canvas-node-container {
   padding: calc(var(--canvas-node-height) * 0.15) calc(var(--canvas-node-width) * 0.15);
 }
 
 /* A circle is drawn on the largest square that fits the card, centred;
    the text sits in that square's inscribed square. */
-.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="circle"] > .canvas-node-container::before {
+.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="circle"] > .icor-canvases-shape-layer {
   width: calc(min(var(--canvas-node-width), var(--canvas-node-height)));
   height: calc(min(var(--canvas-node-width), var(--canvas-node-height)));
   left: 50%;
@@ -770,90 +781,24 @@ html.icor-canvases-in-shape .cm-scroller {
   padding: calc((var(--canvas-node-height) - min(var(--canvas-node-width), var(--canvas-node-height)) * 0.7) / 2) calc((var(--canvas-node-width) - min(var(--canvas-node-width), var(--canvas-node-height)) * 0.7) / 2);
 }
 
-.icor-canvases-shape-preview[data-icor-canvases-shape="circle"] > .icor-canvases-shape-preview-box {
-  width: calc(min(100%, var(--size-4-6)));
-  height: calc(min(100%, var(--size-4-6)));
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-}
-
-/* The cut shapes: no border on the layer (the outline draws it). */
-.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="diamond"] > .canvas-node-container::before,
-.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="triangle"] > .canvas-node-container::before,
-.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="parallelogram"] > .canvas-node-container::before,
-.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="bubble"] > .canvas-node-container::before,
-.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="star"] > .canvas-node-container::before {
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-}
-
-.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="diamond"] > .canvas-node-container::before,
-.icor-canvases-shape-preview[data-icor-canvases-shape="diamond"] > .icor-canvases-shape-preview-box {
-  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
-}
-
 .icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="diamond"] > .canvas-node-container {
   padding: calc(var(--canvas-node-height) * 0.25) calc(var(--canvas-node-width) * 0.25);
-}
-
-.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="triangle"] > .canvas-node-container::before,
-.icor-canvases-shape-preview[data-icor-canvases-shape="triangle"] > .icor-canvases-shape-preview-box {
-  clip-path: polygon(50% 0, 100% 100%, 0 100%);
 }
 
 .icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="triangle"] > .canvas-node-container {
   padding: calc(var(--canvas-node-height) * 0.45) calc(var(--canvas-node-width) * 0.25) calc(var(--canvas-node-height) * 0.08);
 }
 
-.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="parallelogram"] > .canvas-node-container::before,
-.icor-canvases-shape-preview[data-icor-canvases-shape="parallelogram"] > .icor-canvases-shape-preview-box {
-  clip-path: polygon(20% 0, 100% 0, 80% 100%, 0 100%);
-}
-
 .icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="parallelogram"] > .canvas-node-container {
   padding: calc(var(--canvas-node-height) * 0.06) calc(var(--canvas-node-width) * 0.2);
-}
-
-.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="bubble"] > .canvas-node-container::before,
-.icor-canvases-shape-preview[data-icor-canvases-shape="bubble"] > .icor-canvases-shape-preview-box {
-  clip-path: polygon(0 0, 100% 0, 100% 75%, 35% 75%, 20% 100%, 22% 75%, 0 75%);
 }
 
 .icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="bubble"] > .canvas-node-container {
   padding: calc(var(--canvas-node-height) * 0.08) calc(var(--canvas-node-width) * 0.08) calc(var(--canvas-node-height) * 0.28);
 }
 
-.icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="star"] > .canvas-node-container::before,
-.icor-canvases-shape-preview[data-icor-canvases-shape="star"] > .icor-canvases-shape-preview-box {
-  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
-}
-
 .icor-canvases-wrapper .canvas-node[data-icor-canvases-shape="star"] > .canvas-node-container {
   padding: calc(var(--canvas-node-height) * 0.34) calc(var(--canvas-node-width) * 0.28) calc(var(--canvas-node-height) * 0.24);
-}
-
-/* The outline over a cut card: one screen pixel and a half at any zoom,
-   the accent while the card is selected, the same as a card's border. */
-.icor-canvases-shape-outline {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  pointer-events: none;
-}
-
-.icor-canvases-shape-outline polygon {
-  fill: none;
-  stroke: var(--canvas-color);
-  stroke-width: var(--icor-canvases-stroke-width, 2);
-  stroke-dasharray: var(--icor-canvases-dash, none);
-  stroke-linejoin: round;
-  stroke-linecap: round;
-  vector-effect: non-scaling-stroke;
 }
 
 /* The text colour, only on cards that carry one; and the contrast
@@ -973,12 +918,8 @@ html.icor-canvases-in-shape .cm-scroller {
   height: var(--size-4-6);
 }
 
-/* The fill colour, only on cards that carry one. The outline is the
-   card's own colour, set by the canvas's palette button. */
-.icor-canvases-wrapper .canvas-node.icor-canvases-filled > .canvas-node-container::before {
-  background-color: var(--icor-canvases-fill);
-}
-
+/* The fill colour on a plain card that carries one (a shaped card's
+   layer reads the variable itself). */
 .icor-canvases-wrapper .canvas-node.icor-canvases-filled:not([data-icor-canvases-shape]) > .canvas-node-container {
   background-color: var(--icor-canvases-fill);
 }
@@ -1114,8 +1055,13 @@ html.icor-canvases-in-shape .cm-scroller {
   background-color: var(--background-primary);
 }
 
-.icor-canvases-shape-preview .icor-canvases-shape-outline polygon {
-  stroke: var(--text-muted);
+.icor-canvases-shape-preview-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  --canvas-color: var(--text-muted);
+  --icor-canvases-fill: var(--background-primary);
+  --icor-canvases-stroke-width: 1;
 }
 
 /* The colour flyouts: the card's own colour, and none. */

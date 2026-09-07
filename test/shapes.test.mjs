@@ -2,7 +2,7 @@
  * never mutates, the defaults that remove their keys, the colour values. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CLIPPED_SHAPES, OUTLINE_POINTS, SHAPES, SHAPE_KEY, STYLE_KEY, colorValue, isShapeColor, isNewerShape, legacyStroke, prefersDarkText, readShape, relativeLuminance, withShape, withoutLegacyStroke } from './build/pure.mjs';
+import { GEOMETRY, SVG_SHAPES, SHAPES, SHAPE_KEY, STYLE_KEY, colorValue, isShapeColor, isNewerShape, legacyStroke, prefersDarkText, readShape, relativeLuminance, withShape, withoutLegacyStroke } from './build/pure.mjs';
 
 test('readShape reads the two keys and falls back to the default for anything else', () => {
   assert.deepEqual(readShape({}), { shape: 'card', fill: '', text: '', strokeWidth: 2, strokeStyle: 'solid' });
@@ -66,10 +66,17 @@ test('colours: the palette maps to the canvas variables, hex passes, junk is ref
   assert.equal(isShapeColor('#12ab3'), false);
 });
 
-test('every clipped shape has an outline polygon; card is the first shape', () => {
+test('every drawn shape has SVG geometry in the 0 to 100 box; card is the first shape', () => {
   assert.equal(SHAPES[0], 'card');
   assert.equal(SHAPES.length, 10);
-  for (const shape of CLIPPED_SHAPES) assert.match(OUTLINE_POINTS[shape], /^\d+,\d+( \d+,\d+)+$/, shape);
+  for (const shape of SVG_SHAPES) {
+    const g = GEOMETRY[shape];
+    assert.ok(g, shape);
+    if (g.kind === 'polygon') assert.match(g.points, /^\d+,\d+( \d+,\d+)+$/, shape);
+    if (g.kind === 'path') assert.match(g.d, /^M0 0H100/, shape);
+  }
+  assert.equal(GEOMETRY.circle.kind, 'ellipse');
+  assert.equal(SVG_SHAPES.includes('rectangle'), false, 'the box shapes are CSS');
 });
 
 test('the contrast fallback: dark text on a light fill, light text on a dark one', () => {

@@ -58,6 +58,7 @@ test('the plugin touches no global it should not and writes no raw HTML or inlin
     [/\(\?<[=!]/, 'a regex lookbehind'],
     [/!important/, '!important'],
     [/\bactiveLeaf\b/, 'the deprecated activeLeaf'],
+    [/getFiles\(|getMarkdownFiles\(|getAllLoadedFiles\(/, 'a vault enumeration; the index discovers canvases through the metadata cache and the vault events'],
   ];
   for (const f of sources) {
     const text = stripComments(readFileSync(f, 'utf8'));
@@ -119,6 +120,7 @@ test('the stylesheet: prefixed selectors, Obsidian variables only, no hex, no pi
   const css = read('styles.css').replace(/\/\*[\s\S]*?\*\//g, '');
   assert.doesNotMatch(css, /#[0-9a-f]{3,8}\b/i, 'a hex colour');
   assert.doesNotMatch(css, /!important/);
+  assert.doesNotMatch(css, /clip-path/, 'the directory scanner flags clip-path as partially supported; shapes are SVG geometry');
   assert.doesNotMatch(css, /\d(px|em|rem)\b/, 'a literal length; sizes come from --size-* and --radius-*');
   for (const m of css.matchAll(/([^{}]+)\{/g)) {
     for (const selector of m[1].split(',')) {
@@ -137,7 +139,7 @@ test('the built plugin bundles nothing but its own code', () => {
   const main = read('main.js');
   assert.match(main, /require\("obsidian"\)/);
   assert.doesNotMatch(main, /node_modules/, 'a dependency was bundled');
-  /* 0.1.0 shipped at 46 kB, 0.2.0 at 58 kB with seven more features; the
+  /* 0.1.0 shipped at 46 kB, 0.3.x near 90 kB with the second round; the
      cap keeps a stray dependency from riding in unnoticed. */
-  assert.ok(main.length < 96000, `main.js is ${main.length} bytes; expected a small plugin`);
+  assert.ok(main.length < 120000, `main.js is ${main.length} bytes; expected a small plugin`);
 });

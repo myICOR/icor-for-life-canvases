@@ -18,7 +18,7 @@ import { around, hasUnknownData, isEdge, isTextNode, nodeColor, onNodeMenu } fro
 import type { Canvas, CanvasNode } from './internals';
 import type { NodeAddHook } from './nodeHook';
 import type { SelectionMenuHook } from './selectionMenu';
-import { CLIPPED_SHAPES, OUTLINE_POINTS, PALETTE, SHAPES, SHAPE_LABELS, colorLabel, colorValue, isHexColor, STROKE_STYLES, STROKE_WIDTHS, dashArray, fitSize, fitSizeByArea, legacyStroke, prefersDarkText, readShape, relativeLuminance, withShape, withoutLegacyStroke } from './shapeModel';
+import { PALETTE, SHAPES, SHAPE_LABELS, colorLabel, colorValue, isHexColor, STROKE_STYLES, STROKE_WIDTHS, SVG_SHAPES, GEOMETRY, dashArray, fitSize, fitSizeByArea, legacyStroke, prefersDarkText, readShape, relativeLuminance, withShape, withoutLegacyStroke } from './shapeModel';
 import type { StrokeStyle } from './shapeModel';
 import type { Shape, ShapeColor, ShapeStyle } from './shapeModel';
 
@@ -29,7 +29,7 @@ const STROKE_WIDTH_VAR = '--icor-canvases-stroke-width';
 const STROKE_STYLE_VAR = '--icor-canvases-stroke-style';
 const DASH_VAR = '--icor-canvases-dash';
 const PALETTE_VAR = (n: string): string => `--canvas-color-${n}`;
-const OUTLINE_CLASS = 'icor-canvases-shape-outline';
+const LAYER_CLASS = 'icor-canvases-shape-layer';
 /* The bounding frame and its four corner handles on a shaped card: the
    rectangle core resizes from, made visible. Core's resize and connector
    hit zones are elements on its interaction layer, sized to the card's
@@ -271,18 +271,21 @@ export class NodeShapes {
     } else if (!shape && frame) {
       frame.detach();
     }
-    const clipped = shape !== null && (CLIPPED_SHAPES as readonly string[]).includes(shape);
-    let outline = el.querySelector<SVGSVGElement>(`:scope > .${OUTLINE_CLASS}`);
-    if (clipped) {
-      if (!outline) {
-        outline = el.createSvg('svg', { cls: OUTLINE_CLASS, attr: { viewBox: '0 0 100 100', preserveAspectRatio: 'none', 'aria-hidden': 'true' } });
-        outline.createSvg('polygon');
+    /* The geometry layer, first child of the card so it paints behind
+       the container; rebuilt only when the shape changes. */
+    const drawn = shape !== null && (SVG_SHAPES as readonly string[]).includes(shape);
+    let layer = el.querySelector<SVGSVGElement>(`:scope > .${LAYER_CLASS}`);
+    if (drawn) {
+      if (layer && layer.getAttribute('data-shape') !== shape) {
+        layer.detach();
+        layer = null;
       }
-      const polygon = outline.querySelector('polygon');
-      const points = OUTLINE_POINTS[shape] ?? '';
-      if (polygon && polygon.getAttribute('points') !== points) polygon.setAttribute('points', points);
+      if (!layer) {
+        layer = shapeSvg(shape, LAYER_CLASS);
+        el.prepend(layer);
+      }
     } else {
-      outline?.detach();
+      layer?.detach();
     }
   }
 
@@ -448,7 +451,7 @@ export class NodeShapes {
     const root = el.querySelector<HTMLIFrameElement>('iframe.embed-iframe')?.contentDocument?.documentElement;
     root?.removeClass(EDITOR_BODY_CLASS);
     root?.style.removeProperty(EDITOR_TEXT_VAR);
-    el.querySelector(`:scope > .${OUTLINE_CLASS}`)?.detach();
+    el.querySelector(`:scope > .${LAYER_CLASS}`)?.detach();
   }
 
   /* The selection toolbar was rebuilt: with exactly one text card
@@ -607,16 +610,13 @@ export class NodeShapes {
     });
   }
 
-  /* A small card in the shape itself, cut and outlined like the real one. */
+  /* A small card in the shape itself: the same geometry as the real one,
+     or a box for the card, the rectangle and the rounded rectangle. */
   private preview(option: HTMLElement, shape: Shape): void {
     const preview = option.createDiv({ cls: 'icor-canvases-shape-preview' });
     if (shape !== 'card') preview.setAttribute(SHAPE_ATTR, shape);
-    preview.createDiv({ cls: 'icor-canvases-shape-preview-box' });
-    if ((CLIPPED_SHAPES as readonly string[]).includes(shape)) {
-      preview.createSvg('svg', { cls: OUTLINE_CLASS, attr: { viewBox: '0 0 100 100', preserveAspectRatio: 'none', 'aria-hidden': 'true' } }, (svg) => {
-        svg.createSvg('polygon', { attr: { points: OUTLINE_POINTS[shape] ?? '' } });
-      });
-    }
+    if ((SVG_SHAPES as readonly string[]).includes(shape)) preview.appendChild(shapeSvg(shape, 'icor-canvases-shape-preview-svg'));
+    else preview.createDiv({ cls: 'icor-canvases-shape-preview-box' });
   }
 
   private openColor(anchor: HTMLElement, node: CanvasNode, which: 'fill' | 'text'): void {
@@ -662,6 +662,17 @@ export class NodeShapes {
       },
     });
   }
+}
+
+/* One SVG for a shape: a 0 to 100 box stretched to its host, the geometry
+   carrying fill and a non-scaling stroke through the stylesheet. */
+function shapeSvg(shape: Shape, cls: string): SVGSVGElement {
+  const svg = createSvg('svg', { cls, attr: { viewBox: '0 0 100 100', preserveAspectRatio: 'none', 'aria-hidden': 'true', 'data-shape': shape } });
+  const geometry = GEOMETRY[shape];
+  if (!geometry || geometry.kind === 'ellipse') svg.createSvg('ellipse', { attr: { cx: '50', cy: '50', rx: '50', ry: '50' } });
+  else if (geometry.kind === 'polygon') svg.createSvg('polygon', { attr: { points: geometry.points } });
+  else svg.createSvg('path', { attr: { d: geometry.d } });
+  return svg;
 }
 
 /* The plugin registers the private node-menu event once and routes it to

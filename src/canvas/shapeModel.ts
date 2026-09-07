@@ -22,18 +22,23 @@ export const SHAPE_LABELS: Readonly<Record<Shape, string>> = {
   star: 'Star',
 };
 
-/* Shapes cut with a clip-path lose the container's border; these get an
-   SVG outline drawn over the card instead. */
-export const CLIPPED_SHAPES: readonly Shape[] = ['diamond', 'triangle', 'parallelogram', 'bubble', 'star'];
+/* Every shape but the plain card, the rectangle and the rounded
+   rectangle is drawn as SVG geometry in a 0 to 100 box that stretches to
+   the card (preserveAspectRatio none), with fill and a non-scaling
+   stroke; no clip-path anywhere (Obsidian's scanner flags it). The two
+   box shapes are a CSS box. */
+export const SVG_SHAPES: readonly Shape[] = ['ellipse', 'circle', 'diamond', 'triangle', 'parallelogram', 'bubble', 'star'];
 
-/* The outline polygons, in a 0 to 100 box, matching the stylesheet's
-   clip-paths point for point. */
-export const OUTLINE_POINTS: Readonly<Record<string, string>> = {
-  diamond: '50,0 100,50 50,100 0,50',
-  triangle: '50,0 100,100 0,100',
-  parallelogram: '20,0 100,0 80,100 0,100',
-  bubble: '0,0 100,0 100,75 35,75 20,100 22,75 0,75',
-  star: '50,0 61,35 98,35 68,57 79,91 50,70 21,91 32,57 2,35 39,35',
+export type ShapeGeometry = { kind: 'ellipse' } | { kind: 'polygon'; points: string } | { kind: 'path'; d: string };
+
+export const GEOMETRY: Readonly<Record<string, ShapeGeometry>> = {
+  ellipse: { kind: 'ellipse' },
+  circle: { kind: 'ellipse' },
+  diamond: { kind: 'polygon', points: '50,0 100,50 50,100 0,50' },
+  triangle: { kind: 'polygon', points: '50,0 100,100 0,100' },
+  parallelogram: { kind: 'polygon', points: '20,0 100,0 80,100 0,100' },
+  bubble: { kind: 'path', d: 'M0 0H100V75H35L20 100L22 75H0Z' },
+  star: { kind: 'polygon', points: '50,0 61,35 98,35 68,57 79,91 50,70 21,91 32,57 2,35 39,35' },
 };
 
 export const SHAPE_KEY = 'icorShape';
