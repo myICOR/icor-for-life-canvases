@@ -181,7 +181,7 @@ export class NodeShapes {
     const wrapper = this.canvas.wrapperEl;
     const value = PALETTE.includes(fill) ? wrapper.win.getComputedStyle(wrapper).getPropertyValue(PALETTE_VAR(fill)).trim() : fill;
     if (!value) return null;
-    const ctx = this.probeContext(wrapper);
+    const ctx = this.probeContext();
     if (!ctx) return null;
     ctx.fillStyle = '#000000';
     ctx.fillStyle = value;
@@ -192,9 +192,9 @@ export class NodeShapes {
     return prefersDarkText(relativeLuminance(r ?? 0, g ?? 0, b ?? 0)) ? 'dark' : 'light';
   }
 
-  private probeContext(el: HTMLElement): CanvasRenderingContext2D | null {
+  private probeContext(): CanvasRenderingContext2D | null {
     if (this.probe) return this.probe;
-    const probe = el.doc.createElement('canvas');
+    const probe = createEl('canvas');
     probe.width = 1;
     probe.height = 1;
     this.probe = probe.getContext('2d', { willReadFrequently: true });
@@ -239,6 +239,11 @@ export class NodeShapes {
     button.addEventListener('click', (evt) => {
       evt.preventDefault();
       evt.stopPropagation();
+      /* One popover at a time: the canvas's own colour submenu, if open,
+         closes when ours opens (ours closes on any outside press already,
+         so the reverse needs nothing). */
+      for (const submenu of menuEl.querySelectorAll('.canvas-submenu:not(.icor-canvases-flyout)')) submenu.detach();
+      for (const active of menuEl.querySelectorAll('.clickable-icon.is-active')) active.removeClass('is-active');
       onClick(button);
     });
   }
