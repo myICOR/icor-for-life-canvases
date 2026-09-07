@@ -12,11 +12,10 @@
  * edge. Options are buttons for the keyboard: the first one takes focus
  * on open, Enter and Space activate. */
 import { setTooltip } from 'obsidian';
+import { placeFlyout, sideOf } from './flyoutPlacement';
+import type { FlyoutPlacement } from './flyoutPlacement';
 
-/* `below` for a toolbar button; `side` for a button in the controls column,
-   which opens away from the edge the column sits on; `above` for a button
-   on the bottom bar. */
-export type FlyoutPlacement = 'below' | 'side' | 'above';
+export type { FlyoutPlacement } from './flyoutPlacement';
 
 export interface FlyoutOptions {
   /* The button the flyout hangs on; gets `is-active` while open. */
@@ -56,40 +55,24 @@ export class Flyout {
   private constructor(private readonly options: FlyoutOptions) {
     const { anchor, placement, columns } = options;
     const doc = anchor.doc;
+    /* Read from the live button at open time, in its own window. */
     const rect = anchor.getBoundingClientRect();
     const win = anchor.win;
+    const viewport = { width: win.innerWidth, height: win.innerHeight };
     /* The column's edge, read from where the anchor is, not from a setting. */
-    const side = placement === 'below' || placement === 'above' ? placement : rect.left + rect.width / 2 < win.innerWidth / 2 ? 'right' : 'left';
+    const side = placement === 'below' || placement === 'above' ? placement : sideOf(rect, viewport);
     const el = doc.body.createDiv({ cls: ['canvas-submenu', 'icor-canvases-flyout', `icor-canvases-flyout-${side}`], attr: { role: 'group' } });
     if (columns) {
       el.addClass('icor-canvases-flyout-grid');
       el.setCssProps({ '--icor-canvases-flyout-columns': String(columns) });
     }
-    /* Measured once, on open; anything that moves the anchor closes. */
-    if (side === 'left') {
-      el.setCssProps({
-        '--icor-canvases-flyout-top': `${rect.top}px`,
-        '--icor-canvases-flyout-right': `${win.innerWidth - rect.left}px`,
-      });
-    } else if (side === 'right') {
-      el.setCssProps({
-        '--icor-canvases-flyout-top': `${rect.top}px`,
-        '--icor-canvases-flyout-left': `${rect.right}px`,
-      });
-    } else if (side === 'above') {
-      el.setCssProps({
-        '--icor-canvases-flyout-bottom': `${win.innerHeight - rect.top}px`,
-        '--icor-canvases-flyout-right': `${win.innerWidth - rect.right}px`,
-      });
-    } else {
-      el.setCssProps({
-        '--icor-canvases-flyout-top': `${rect.bottom}px`,
-        '--icor-canvases-flyout-left': `${rect.left + rect.width / 2}px`,
-      });
-    }
     this.el = el;
     anchor.addClass('is-active');
     options.build(el, () => this.close());
+    /* Placed once the panel has its size, clamped inside the window;
+       anything that moves the anchor closes it. */
+    const point = placeFlyout(rect, { width: el.offsetWidth, height: el.offsetHeight }, placement, viewport);
+    el.setCssProps({ '--icor-canvases-flyout-top': `${point.top}px`, '--icor-canvases-flyout-left': `${point.left}px` });
     const signal = this.abort.signal;
     /* Presses stay inside: the canvas must not see one as a press on the
        wrapper (a rubber band, a pan) or the controls (another button). */
