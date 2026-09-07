@@ -4,6 +4,83 @@ All notable changes to ICOR for Life - Canvases.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] - Unreleased
+
+Tom tested 0.1.0 and asked for seven things. All seven, plus two live
+asks from the same day.
+
+### Added
+- **Connections open at the edge.** A click on a connection row, in the
+  note footer or in the Backlinks pane, opens the canvas with that edge
+  selected and both of its cards in view. Mod-click keeps the other
+  end's own meaning: a note opens in a new tab, any other card opens the
+  canvas at that card in a new tab.
+- **Tools.** Select, Hand, Pen and Eraser as one exclusive group in the
+  canvas's controls column, per canvas, default Select. Select is the
+  canvas as it is (drag on empty canvas draws the marquee); Hand pans on
+  a mouse or pen drag and leaves a finger to the canvas's own touch pan
+  and pinch; Pen and Eraser are the ink modes. Keys V, H, P and E while
+  the canvas has focus and nothing is being edited. A Group button
+  appears while two or more cards are selected and groups them the way
+  the canvas's own "Create group" does. Commands: Pen tool (the 0.1.0
+  "Toggle drawing mode" id), Select tool, Hand tool, Eraser tool, Group
+  the selection.
+- **Flyouts.** The ink colour and width buttons open a panel with every
+  option visible (the six canvas colours plus default as swatches; the
+  three widths as stroke previews) instead of cycling. One flyout at a
+  time; a press outside, Escape, a scroll, a wheel turn or a choice
+  closes it.
+- **Groups in the metadata.** Under each canvas name, one muted line per
+  group whose box contains the card, innermost first: "in group Ideas"
+  or "in group unnamed group". A click opens the canvas at the group.
+  Group labels keep their screen size once the canvas is zoomed out past
+  the point where the canvas hides card labels.
+- **Nested canvases.** "New canvas here" in the canvas's background
+  context menu creates a .canvas file next to the parent (name
+  "<parent> - n", editable in a small dialog) and places a card pointing
+  at it where the menu was opened; the card is the canvas's own
+  canvas-in-canvas embed. Inside a canvas that sits on other canvases, a
+  breadcrumb chip in the top corner names each parent; a click opens
+  the parent at this canvas's card. The index places canvas files the
+  way it places notes.
+- **Shapes and colours for text cards.** With one text card selected,
+  the canvas's floating toolbar gets Switch shape (card, rectangle,
+  rounded rectangle, ellipse, circle, diamond, triangle, parallelogram,
+  speech bubble, star), Outline colour and Fill colour (the six canvas
+  colours, the card's own, none, a custom colour). Saved on the card's
+  own data as `icorShape` and `icorStyle: { stroke, fill }`, which the
+  canvas keeps across loads, saves, undo, redo, copy and paste. The
+  card's context menu has a Shape item for the keyboard. Note cards keep
+  the 0.1.0 toolbar.
+- **Controls column side.** The canvas's controls column, with the tool
+  group in it, sits at the left edge by default (Tom's live ask); the
+  setting "Controls column side" puts it back on the right. Flyouts and
+  tooltips open away from the column's edge.
+
+### Changed
+- **The Canvases panel is a section of the Backlinks pane.** The
+  separate sidebar view and its ribbon icon are gone; a "Canvases"
+  section with the pane's own header look sits under Linked and
+  Unlinked mentions, follows the pane's note, and re-renders when a
+  canvas changes. The command "Show canvases for this note" (the 0.1.0
+  "Open canvases panel" id) reveals the Backlinks pane. A leaf of the
+  old view left in a workspace is detached at startup. The note footer
+  and its setting are unchanged.
+
+### Fixed (during Tom's test of the first 0.2.0 build)
+- The colour flyout opened behind the controls column. Every flyout now
+  renders in the window's body, fixed at its button, above the canvas
+  controls and menu.
+
+### Known limits
+- Built against and verified live on Obsidian 1.13.7 only, on a desktop
+  Mac. The private surface grew (`docs/architecture.md` lists every
+  member with its re-check grep).
+- On a phone the control group is not shown (as in 0.1.0); the tools
+  are reached through the commands from the mobile toolbar.
+- A shape's text is centred and padded to stay inside the visible area;
+  a long text in a triangle or a star is cut, as it would be in Miro.
+
 ## [0.1.0] - 2026-09-07
 
 ### Added
@@ -59,4 +136,5 @@ Versions follow [Semantic Versioning](https://semver.org/).
   greps that re-verify it on the next Obsidian release.
 - Whether "Export as image" includes the ink is unverified.
 
+[0.2.0]: docs/releases/0.2.0.md
 [0.1.0]: docs/releases/0.1.0.md

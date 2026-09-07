@@ -137,5 +137,7 @@ test('the built plugin bundles nothing but its own code', () => {
   const main = read('main.js');
   assert.match(main, /require\("obsidian"\)/);
   assert.doesNotMatch(main, /node_modules/, 'a dependency was bundled');
-  assert.ok(main.length < 64000, `main.js is ${main.length} bytes; expected a small plugin`);
+  /* 0.1.0 shipped at 46 kB, 0.2.0 at 58 kB with seven more features; the
+     cap keeps a stray dependency from riding in unnoticed. */
+  assert.ok(main.length < 96000, `main.js is ${main.length} bytes; expected a small plugin`);
 });

@@ -1,8 +1,8 @@
 # Architecture
 
-ICOR for Life - Canvases, 0.1.0. What the modules are, which of them
-reach into Obsidian's unpublished canvas API, how the ink is persisted,
-and what to re-check when Obsidian updates.
+ICOR for Life - Canvases, 0.2.0. What the modules are, which of them
+reach into Obsidian's unpublished canvas API, how the ink and the card
+styles are persisted, and what to re-check when Obsidian updates.
 
 ## Verified against
 
@@ -25,20 +25,29 @@ the development Mac on 2026-09-06 and 2026-09-07:
 
 | Module | Job | Private API |
 | --- | --- | --- |
-| `src/main.ts` | Loads settings, builds the index, the registry and the footers, registers the view, the commands, the ribbon icon, the vault events and the `file-menu` items. | none |
-| `src/canvas/internals.ts` | The one door to the private canvas API: the types, the member table, `requireCanvas`, `asCanvasView`, `nodeFromElement`, the `around` instance patcher, the cross-window element helpers. | all of it, by design |
-| `src/canvas/registry.ts` | Finds canvas views, binds the three canvas features to each once, tears them down with the view or the plugin. | via `requireCanvas` |
-| `src/canvas/ink.ts` | The ink layer: overlay, controls, draw surface, pointer handling, the commit path, the `setData` and `applyHistory` wraps. | `canvasEl`, `wrapperEl`, `data`, `readonly`, `requestSave`, `setData`, `applyHistory`, `posFromEvt`, `scale`, `.canvas-controls` |
-| `src/canvas/inkModel.ts` | Pure: widths, colour cycle, the stroke builder, the SVG path, the eraser hit test. | none |
+| `src/main.ts` | Loads settings, builds the index, the registry, the footers and the Backlinks sections; registers the commands, the vault events, the `file-menu` items and the node-menu event; detaches a leaf of the retired 0.1.0 view. | none |
+| `src/canvas/internals.ts` | The one door to the private canvas API: the types, the member table, `requireCanvas`, `asCanvasView`, `nodeFromElement`, the node type guards, `selectionMenu`, `onNodeMenu`, the `around` instance patcher, the cross-window element helpers. | all of it, by design |
+| `src/canvas/registry.ts` | Finds canvas views, binds every canvas feature to each once (in an order whose reverse is the dispose order), tears them down with the view or the plugin. | via `requireCanvas` |
+| `src/canvas/ink.ts` | The ink layer: overlay, draw surface, pointer handling, the commit path, the `setData` and `applyHistory` wraps; reports mode changes to the tools. | `canvasEl`, `wrapperEl`, `data`, `readonly`, `requestSave`, `setData`, `applyHistory`, `posFromEvt`, `scale` |
+| `src/canvas/tools.ts` | The tool group in the controls column: Select, Hand, Pen, Eraser, Group, the pickers, undo, clear; the Hand surface; V/H/P/E. | `wrapperEl`, `posFromEvt`, `panBy`, `selection`, `readonly`, `createGroupNode`, `.canvas-controls` |
+| `src/canvas/flyout.ts` | The popover every picker uses: body-appended, fixed at the anchor, one at a time. | `.canvas-submenu` (look only) |
+| `src/canvas/pickers.ts` | The ink colour and width flyouts. | `.canvas-color-picker-item`, `mod-canvas-color-N` (look only) |
+| `src/canvas/selectionMenu.ts` | One wrap of the selection toolbar's `render` per canvas, shared. | `menu`, `menu.menuEl`, `menu.render(rebuild)` |
+| `src/canvas/nodeHook.ts` | One wrap of `addNode` per canvas, shared by the toolbar and the shapes. | `addNode` |
+| `src/canvas/shapeModel.ts` | Pure: shapes, colours, `readShape`, `withShape`, the outline polygons. | none |
+| `src/canvas/shapes.ts` | Shapes and colours on text cards: the toolbar buttons, the flyouts, the node-menu item, the per-node `setData` wrap, the DOM apply. | `selection`, `readonly`, `requestSave`, `node.unknownData`, `node.setData`, `node.text`, `nodeEl`, `.canvas-node-container`, `canvas:node-menu`, `.canvas-menu` buttons |
+| `src/canvas/nested.ts` | "New canvas here" through the `showCreationMenu` wrap, the name modal, the breadcrumb chip. | `showCreationMenu`, `createFileNode`, `readonly`, `view.file`, `wrapperEl` |
+| `src/canvas/geometry.ts` | Pure: boxes, union, padding, containment, area. | none |
+| `src/canvas/inkModel.ts` | Pure: widths, the stroke builder, the SVG path, the eraser hit test. | none |
 | `src/canvas/format.ts` | Pure: the file format types, `readInk`, `withInk`. | none |
 | `src/canvas/openInSidebar.ts` | Modifier-click on a note card. | `nodes`, `nodeEl`, `.canvas-node`, `.canvas-node-label`, `is-focused` |
-| `src/canvas/nodeToolbar.ts` | The toolbar and the pill on every note card; the `addNode` wrap. | `nodes`, `addNode`, `nodeEl`, `file`, `filePath`, `selectOnly`, `zoomToSelection`, `view.file` |
-| `src/canvas/navigate.ts` | Open a canvas at a card: `openFile` with `eState.match.nodeId`, then select and zoom once the node exists. | `match.nodeId` ephemeral state, `nodes`, `selectOnly`, `zoomToSelection` |
+| `src/canvas/nodeToolbar.ts` | The toolbar and the pill on every note card. | `nodes`, `nodeEl`, `file`, `filePath`, `selectOnly`, `zoomToSelection`, `view.file` |
+| `src/canvas/navigate.ts` | Open a canvas at a card or at an edge: `openFile` with `eState.match.nodeId`, then select and zoom once the node exists. | `match.nodeId` ephemeral state, `nodes`, `edges`, `selectOnly`, `zoomToSelection`, `zoomToBbox`, `edge.from/to.node`, `edge.getBBox` |
 | `src/open.ts` | Right sidebar, new tab, link-style open. | none |
-| `src/index/parse.ts` | Pure: one canvas file to placements and connections. | none (file format only) |
+| `src/index/parse.ts` | Pure: one canvas file to placements, connections and containing groups. | none (file format only) |
 | `src/index/CanvasIndex.ts` | Every canvas in the vault, kept fresh, with `subscribe`. | none |
 | `src/views/rows.ts` | The rows both surfaces share. | none |
-| `src/views/CanvasesView.ts` | The sidebar `ItemView`. | none |
+| `src/views/backlinksSection.ts` | The "Canvases" section inside the core Backlinks pane. | `.backlink-pane`, the pane's header classes, `view.update` |
 | `src/views/footer.ts` | The block under a note, placed after `.embedded-backlinks`. | `.embedded-backlinks`, `data-mode` |
 | `src/settings/*` | The settings model, the table, the declared settings tab. | none |
 | `src/log.ts` | Debug channel and degrade channel. | none |
@@ -85,12 +94,33 @@ against the next bundle before shipping on it.
 | `.markdown-preview-sizer`, `.cm-sizer` | CSS | The two sizers the block falls back to. | `createDiv("markdown-preview-sizer markdown-preview-section")`, `createDiv("cm-sizer")` |
 | `.canvas-wrapper.mod-zoomed-out` | CSS | Set on the wrapper each frame past the zoom breakpoint; core hides card labels under it, the plugin hides the toolbar and the pill. | `toggleClass("mod-zoomed-out"` |
 | `data-mode` on `MarkdownView.containerEl` | attribute | Set on every mode switch; the footer follows it with a MutationObserver. | `containerEl.setAttribute("data-mode",this.getMode())` |
+| `canvas.select(item)` | function | Adds a node or an edge to the selection. The selection holds both. | `select=function(e){var t=this.selection;t.has(e)\|\|this.updateSelection` |
+| `edge.from`, `edge.to`, `edge.getBBox()` | object, function | `{node, side, end}` at each end; the box spanned by the two ends. | `getBBox=function(){var e=this.from,t=this.to` |
+| `edge.select()` | function | Adds `is-focused` to both path groups; what `selectOnly(edge)` shows. | `select=function(){this.lineGroupEl.addClass("is-focused")` |
+| `canvas.panBy(dx, dy)` | function | Moves the viewport by canvas units; the Hand tool's pan. | `panBy=function(e,t){this.x+=e,this.y+=t` |
+| `canvas.handleDragToSelect` | behaviour | A left drag on the wrapper itself draws the marquee; the Select tool is this, untouched. | `e.targetNode===this.wrapperEl&&"mouse"===e.pointerType&&0===e.button` |
+| `canvas.createGroupNode({pos, size})` | function | The Group button; core's own "Create group" pads the union box by 20 and calls it the same way. | `createGroupNode=function(e){var t=e.pos,n=e.size` |
+| `canvas.createFileNode({pos, size, file, save, focus})` | function | The card for a new nested canvas. | `createFileNode=function(e){var t=e.pos,n=e.size` |
+| `canvas.showCreationMenu(menu, pos, size)` | function | Builds the background context menu's items; `onContextMenu` looks it up on the instance at call time, so an instance wrap adds "New canvas here". | `showCreationMenu=function(e,t,n){` and `this.showCreationMenu(i,n),i.addSeparator()` |
+| `canvas.menu`, `menu.menuEl`, `menu.render(rebuild)` | object | The floating selection toolbar (`div.canvas-menu`); the frame loop calls `render` with `rebuild` true on a selection change and false on a viewport change. Wrapped once per canvas. | `this.menuEl=n.createDiv("canvas-menu")` and `&&t.menu.render(te)` |
+| `.canvas-menu button.clickable-icon` | CSS | Core's toolbar buttons; the shape buttons are built the same. | `createEl("button","clickable-icon")` (two hits: the toolbar and one other) |
+| `.canvas-submenu`, `.canvas-color-picker-item`, `.mod-canvas-color-N` | CSS | Core's colour submenu look; the flyouts borrow the classes and add their own placement. | `createDiv("canvas-submenu")`, `createDiv("canvas-color-picker-item")`, `"mod-canvas-color-"+e` |
+| `node.unknownData`, `node.setData(data)` | object, function | The keys of a card's data the canvas does not know, replaced on every `setData` and spread back by `getData`; the shape and colours live there. | `this.unknownData=s},Object.defineProperty(e.prototype,"rect"` and `getData=function(){var e=this,t=e.id,n=e.x,i=e.y,r=e.width,o=e.height,a=e.color,s=e.unknownData` |
+| `node.text` (text card), `node.label` + `bgPath` (group) | properties | The type guards for a text card and a group. | `{type:"text",text:this.text}` and `{type:"group"})` |
+| `canvas:node-menu` | private event | `(menu, node)` from a card's context menu; the Shape item for text cards. | `trigger("canvas:node-menu",e,this)` |
+| `.canvas-controls` at `inset-inline-end` | CSS | Core's column on the right; the plugin's wrapper class moves it to `inset-inline-start` by setting. | `createDiv("canvas-controls"` and, in app.css, `.canvas-controls {` |
+| `.canvas-group-label` | CSS | A group's label, scaled by the zoom multiplier; not hidden under `mod-zoomed-out` (only `.canvas-node-label` is); the plugin holds it at screen size past the breakpoint. | `createDiv("canvas-group-label")` |
+| `--layer-cover` (5), `--layer-menu` (65) | CSS variables | The controls column's layer and the one the flyouts use above it. | `--layer-cover: 5`, `--layer-menu: 65` in app.css |
+| view type `backlink`, `.backlink-pane`, `.tree-item-self.is-clickable` header, `.search-result-container`, `view.update()` | view | The core Backlinks pane and its two section headers; the Canvases section is a third built the same way, and `update` (the pane's own refresh on a file change) is wrapped on the instance. `view.file` is public. | `Q3="backlink"`, `createDiv("backlink-pane")`, `update=function(){this.leaf.updateHeader();var e=this.backlink;e.file=this.file` |
+| `is-collapsed` on a header and its `.collapse-icon` | CSS | How the pane collapses a section. | `function cI(e,t){e.toggleClass("is-collapsed",t)` |
 
-Not used, and known: the `canvas:node-menu`, `canvas:edge-menu` and
-`canvas:selection-menu` events (not in the typings; the public `file-menu`
-does the job), `canvas.menu` (the selection toolbar core draws), and
-`metadataCache.resolvedLinks` for canvas files (the index parses the files
-itself so it can show edges).
+Not used, and known: the `canvas:edge-menu` and `canvas:selection-menu`
+events (not in the typings), `canvas.getContainingNodes` (the index
+computes containment from the file), and `metadataCache.resolvedLinks`
+for canvas files (the index parses the files itself so it can show
+edges and groups). Obsidian's context menus are native on macOS by
+default, so a menu wrap is verified by handing the wrapped method a
+recording menu object, not by reading `.menu` in the DOM.
 
 ## Persistence
 
@@ -123,6 +153,19 @@ set `this.data`, and both methods are wrapped to re-render the overlay.
 The sidecar fallback (`<name>.canvas.ink.json`) was not needed and is
 not implemented.
 
+### Shapes and colours on a text card
+
+On the card's own entry: `"icorShape": "<shape>"` and
+`"icorStyle": { "stroke"?: "<colour>", "fill"?: "<colour>" }`, a colour
+being `"1"` to `"6"`, `"transparent"` or a hex string. In 1.13.7 a card's
+`setData` keeps every key it does not know in `node.unknownData` (a fresh
+object each time) and `getData` spreads it back first, so the keys
+survive a save, a load, undo, redo, copy and paste with no patch of
+`getData`. The write is `node.unknownData = withShape(node.unknownData,
+patch)` plus `canvas.requestSave()`; the DOM is re-applied through an
+instance wrap of the node's `setData`, which is where a load, an undo
+and a paste land. Default values remove their keys.
+
 ## Wiring lifecycle
 
 - `CanvasRegistry.sweep()` runs at layout-ready and on `layout-change` and
@@ -137,6 +180,17 @@ not implemented.
 - The toolbar is injected once per card into `node.nodeEl` and survives
   the card being detached off screen; a card added later comes through
   the `addNode` wrap, decorated on the next microtask so its file is set.
+- The selection toolbar's `render` and the canvas's `addNode` are each
+  wrapped once per canvas (`SelectionMenuHook`, `NodeAddHook`) and fan
+  out to listeners; the registry disposes features in the reverse of the
+  bind order so every wrap is the installed one when its undo runs.
+- The Backlinks section is bound per `backlink` leaf on every sweep,
+  wraps the view's `update` on the instance, and is removed with the
+  view's `register` or the plugin.
+- Flyouts are appended to the body of the anchor's window, fixed at the
+  anchor's rectangle, and closed by an outside press, Escape, scroll,
+  wheel, resize, a choice, or the plugin unloading through the
+  controller that owns them.
 - The footer is one element per `MarkdownView`, bound on the first sweep
   that sees the view and placed after `.embedded-backlinks` when that is
   in the DOM, else at the end of the mode's sizer. One MutationObserver
@@ -169,3 +223,8 @@ not implemented.
 - A canvas moved into a pop-out window (the element checks are
   cross-window on purpose; the wiring itself was not exercised there).
 - Obsidian builds older than 1.13.7.
+- The canvas-in-canvas embed of a new, empty child (a 0-byte file, as
+  core's own command writes).
+- Touch on an iPad for the Hand surface and the tool buttons.
+- The body-appended flyouts in a pop-out window.
+- "Export as image" with shapes and outlines on the canvas.
