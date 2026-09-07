@@ -1,0 +1,321 @@
+/* ICOR for Life - Canvases
+ *
+ * The ink overlay and its draw surface, the toolbar and pill on a note
+ * card, and the rows of the sidebar view and the note footer. Every rule
+ * sits on the icor-canvases- prefix and every value comes from Obsidian's
+ * own variables; the ink controls carry the canvas's own control classes
+ * and take their look from the theme. */
+
+/* Ink overlay: inside the canvas's transformed layer, like its edges. */
+.icor-canvases-ink {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  color: var(--text-normal);
+  z-index: 9000;
+}
+
+.icor-canvases-ink-stroke {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icor-canvases-ink-color-1 {
+  stroke: var(--canvas-color-1);
+  color: var(--canvas-color-1);
+}
+
+.icor-canvases-ink-color-2 {
+  stroke: var(--canvas-color-2);
+  color: var(--canvas-color-2);
+}
+
+.icor-canvases-ink-color-3 {
+  stroke: var(--canvas-color-3);
+  color: var(--canvas-color-3);
+}
+
+.icor-canvases-ink-color-4 {
+  stroke: var(--canvas-color-4);
+  color: var(--canvas-color-4);
+}
+
+.icor-canvases-ink-color-5 {
+  stroke: var(--canvas-color-5);
+  color: var(--canvas-color-5);
+}
+
+.icor-canvases-ink-color-6 {
+  stroke: var(--canvas-color-6);
+  color: var(--canvas-color-6);
+}
+
+/* The colour control shows its colour on the icon; the width control
+   shows its width on the icon's line. */
+.icor-canvases-ink-color svg {
+  fill: currentColor;
+}
+
+.icor-canvases-ink-width-thin svg {
+  stroke-width: 1.5;
+}
+
+.icor-canvases-ink-width-medium svg {
+  stroke-width: 2.5;
+}
+
+.icor-canvases-ink-width-thick svg {
+  stroke-width: 3.5;
+}
+
+/* The draw surface: over the cards, under the controls, only while a pen
+   mode is on. */
+.icor-canvases-ink-surface {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.icor-canvases-ink-surface.is-erasing {
+  cursor: cell;
+}
+
+/* The note card toolbar and pill: hidden until the card is hovered or
+   selected, and while the canvas is zoomed far out. */
+.icor-canvases-node {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity var(--anim-duration-fast) var(--anim-motion-smooth);
+}
+
+.canvas-node:hover .icor-canvases-node,
+.canvas-node.is-selected .icor-canvases-node,
+.canvas-node.is-focused .icor-canvases-node {
+  opacity: 1;
+}
+
+.canvas-wrapper.mod-zoomed-out .icor-canvases-node,
+.canvas-node.is-dragging .icor-canvases-node {
+  opacity: 0;
+}
+
+/* Scaled by the inverse zoom the way core scales a card's label, so the
+   buttons keep their screen size while the card zooms. */
+.icor-canvases-node-toolbar {
+  position: absolute;
+  left: var(--size-4-2);
+  top: var(--size-4-2);
+  display: flex;
+  gap: var(--size-2-1);
+  pointer-events: auto;
+  transform: scale(var(--zoom-multiplier));
+  transform-origin: top left;
+}
+
+.icor-canvases-node-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--size-2-2);
+  border-radius: var(--radius-s);
+  background-color: var(--background-secondary);
+  color: var(--text-muted);
+  box-shadow: var(--shadow-s);
+  cursor: var(--cursor);
+}
+
+.icor-canvases-node-button:hover,
+.icor-canvases-node-button:focus-visible {
+  color: var(--text-normal);
+  background-color: var(--background-modifier-hover);
+}
+
+.icor-canvases-node-button svg {
+  width: var(--icon-s);
+  height: var(--icon-s);
+  pointer-events: none;
+}
+
+.icor-canvases-node-pill {
+  position: absolute;
+  right: var(--size-4-2);
+  top: var(--size-4-2);
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-1);
+  padding: var(--size-2-1) var(--size-4-2);
+  border-radius: var(--radius-l);
+  background-color: var(--background-secondary);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  line-height: var(--line-height-tight);
+  box-shadow: var(--shadow-s);
+  cursor: var(--cursor);
+  pointer-events: auto;
+  white-space: nowrap;
+  transform: scale(var(--zoom-multiplier));
+  transform-origin: top right;
+}
+
+.icor-canvases-node-pill:hover {
+  color: var(--text-normal);
+  background-color: var(--background-modifier-hover);
+}
+
+.icor-canvases-node-pill-icon svg {
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+}
+
+/* The sidebar view and the note footer share the rows. */
+.icor-canvases-view {
+  padding: var(--size-4-2) var(--size-4-3);
+}
+
+.icor-canvases-note {
+  font-weight: var(--font-semibold);
+  margin-bottom: var(--size-4-2);
+}
+
+.icor-canvases-empty {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+
+.icor-canvases-canvas {
+  margin-bottom: var(--size-4-3);
+}
+
+.icor-canvases-canvas-title {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-2);
+  padding: var(--size-2-1) var(--size-2-2);
+  border-radius: var(--radius-s);
+  font-weight: var(--font-medium);
+  cursor: var(--cursor);
+}
+
+.icor-canvases-canvas-title:hover,
+.icor-canvases-canvas-title:focus-visible {
+  background-color: var(--background-modifier-hover);
+}
+
+.icor-canvases-canvas-icon svg,
+.icor-canvases-row-direction svg,
+.icor-canvases-row-kind svg {
+  width: var(--icon-s);
+  height: var(--icon-s);
+  display: block;
+}
+
+.icor-canvases-canvas-icon,
+.icor-canvases-row-kind {
+  color: var(--text-muted);
+}
+
+.icor-canvases-rows {
+  padding-left: var(--size-4-4);
+}
+
+.icor-canvases-row {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-2);
+  padding: var(--size-2-1) var(--size-2-2);
+  border-radius: var(--radius-s);
+  font-size: var(--font-ui-small);
+  cursor: var(--cursor);
+  min-width: 0;
+}
+
+.icor-canvases-row:hover,
+.icor-canvases-row:focus-visible {
+  background-color: var(--background-modifier-hover);
+}
+
+.icor-canvases-row.is-empty {
+  color: var(--text-faint);
+  cursor: default;
+}
+
+.icor-canvases-row.is-empty:hover {
+  background-color: transparent;
+}
+
+.icor-canvases-row-direction {
+  color: var(--text-muted);
+}
+
+.icor-canvases-row-direction.is-out {
+  color: var(--interactive-accent);
+}
+
+.icor-canvases-row-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.icor-canvases-row-label {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The footer under a note, next to the backlinks block. */
+.icor-canvases-footer {
+  border-top: var(--border-width) solid var(--background-modifier-border);
+  padding-top: var(--size-4-3);
+  margin-top: var(--size-4-4);
+}
+
+.icor-canvases-footer-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-2);
+  font-size: var(--font-ui-small);
+  font-weight: var(--font-semibold);
+  color: var(--text-muted);
+  cursor: var(--cursor);
+  width: fit-content;
+  padding: var(--size-2-1) 0;
+}
+
+.icor-canvases-footer-chevron svg {
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+  transition: transform var(--anim-duration-fast) var(--anim-motion-smooth);
+}
+
+.icor-canvases-footer.is-collapsed .icor-canvases-footer-chevron svg {
+  transform: rotate(-90deg);
+}
+
+.icor-canvases-footer-count {
+  font-weight: var(--font-normal);
+  color: var(--text-faint);
+}
+
+.icor-canvases-footer .icor-canvases-list {
+  padding-top: var(--size-2-2);
+}
