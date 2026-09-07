@@ -40,6 +40,17 @@ export const SETTING_ROWS: readonly SettingRow[] = [
     },
   },
   {
+    type: 'dropdown',
+    group: 'Canvas',
+    key: 'controlsSide',
+    name: 'Controls column side',
+    desc: 'Which edge of the canvas the controls column sits on: the zoom, undo and settings controls, and the tool group under them. Left is the toolbar side; right is where the canvas puts it on its own.',
+    options: {
+      left: 'Left',
+      right: 'Right',
+    },
+  },
+  {
     type: 'toggle',
     group: 'Canvas',
     key: 'toolbar',

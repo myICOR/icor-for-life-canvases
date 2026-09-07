@@ -108,8 +108,9 @@ test('every setting has exactly one row and a default the normaliser keeps', () 
   assert.equal(new Set(keys).size, keys.length, 'a setting with two rows');
   assert.deepEqual(normaliseSettings(DEFAULT_SETTINGS), DEFAULT_SETTINGS);
   assert.deepEqual(normaliseSettings({ modifier: 'shift', penColor: 'pink', penWidth: 9, footer: 'yes' }), DEFAULT_SETTINGS, 'bad values fall back');
-  assert.deepEqual(normaliseSettings({ modifier: 'alt', penColor: '3', penWidth: 'thick', footer: false, toolbar: false, penDraws: false, debug: true }), {
+  assert.deepEqual(normaliseSettings({ modifier: 'alt', controlsSide: 'right', penColor: '3', penWidth: 'thick', footer: false, toolbar: false, penDraws: false, debug: true }), {
     modifier: 'alt',
+    controlsSide: 'right',
     penColor: '3',
     penWidth: 'thick',
     footer: false,

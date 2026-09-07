@@ -13,7 +13,9 @@
  * on open, Enter and Space activate. */
 import { setTooltip } from 'obsidian';
 
-export type FlyoutPlacement = 'below' | 'left';
+/* `below` for a toolbar button; `side` for a button in the controls column,
+   which opens away from the edge the column sits on. */
+export type FlyoutPlacement = 'below' | 'side';
 
 export interface FlyoutOptions {
   /* The button the flyout hangs on; gets `is-active` while open. */
@@ -53,18 +55,25 @@ export class Flyout {
   private constructor(private readonly options: FlyoutOptions) {
     const { anchor, placement, columns } = options;
     const doc = anchor.doc;
-    const el = doc.body.createDiv({ cls: ['canvas-submenu', 'icor-canvases-flyout', `icor-canvases-flyout-${placement}`], attr: { role: 'group' } });
+    const rect = anchor.getBoundingClientRect();
+    const win = anchor.win;
+    /* The column's edge, read from where the anchor is, not from a setting. */
+    const side = placement === 'below' ? 'below' : rect.left + rect.width / 2 < win.innerWidth / 2 ? 'right' : 'left';
+    const el = doc.body.createDiv({ cls: ['canvas-submenu', 'icor-canvases-flyout', `icor-canvases-flyout-${side}`], attr: { role: 'group' } });
     if (columns) {
       el.addClass('icor-canvases-flyout-grid');
       el.setCssProps({ '--icor-canvases-flyout-columns': String(columns) });
     }
     /* Measured once, on open; anything that moves the anchor closes. */
-    const rect = anchor.getBoundingClientRect();
-    const win = anchor.win;
-    if (placement === 'left') {
+    if (side === 'left') {
       el.setCssProps({
         '--icor-canvases-flyout-top': `${rect.top}px`,
         '--icor-canvases-flyout-right': `${win.innerWidth - rect.left}px`,
+      });
+    } else if (side === 'right') {
+      el.setCssProps({
+        '--icor-canvases-flyout-top': `${rect.top}px`,
+        '--icor-canvases-flyout-left': `${rect.right}px`,
       });
     } else {
       el.setCssProps({

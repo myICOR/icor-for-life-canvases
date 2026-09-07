@@ -17,8 +17,15 @@ export type PenColorSetting = 'default' | Exclude<InkColor, ''>;
 
 export const PEN_COLOR_SETTINGS: readonly PenColorSetting[] = ['default', '1', '2', '3', '4', '5', '6'];
 
+/* Which edge of the canvas the controls column sits on. Core puts it on
+   the right; Heptabase's toolbar is on the left. */
+export type ControlsSide = 'left' | 'right';
+
+export const CONTROLS_SIDES: readonly ControlsSide[] = ['left', 'right'];
+
 export interface CanvasesSettings {
   modifier: OpenModifier;
+  controlsSide: ControlsSide;
   footer: boolean;
   toolbar: boolean;
   penColor: PenColorSetting;
@@ -30,6 +37,7 @@ export interface CanvasesSettings {
 
 export const DEFAULT_SETTINGS: CanvasesSettings = {
   modifier: 'mod',
+  controlsSide: 'left',
   footer: true,
   toolbar: true,
   penColor: 'default',
@@ -50,6 +58,7 @@ export function normaliseSettings(raw: unknown): CanvasesSettings {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
   return {
     modifier: oneOf(r.modifier, OPEN_MODIFIERS, DEFAULT_SETTINGS.modifier),
+    controlsSide: oneOf(r.controlsSide, CONTROLS_SIDES, DEFAULT_SETTINGS.controlsSide),
     footer: bool(r.footer, DEFAULT_SETTINGS.footer),
     toolbar: bool(r.toolbar, DEFAULT_SETTINGS.toolbar),
     penColor: oneOf(r.penColor, PEN_COLOR_SETTINGS, DEFAULT_SETTINGS.penColor),

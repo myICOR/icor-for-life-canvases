@@ -43,6 +43,8 @@ export interface ToolHost {
   /* No control group on a phone: the column is already full there and
      the commands carry the same actions to the mobile toolbar. */
   controls: boolean;
+  /* Which edge the column sits on; tooltips open away from it. */
+  side: () => 'left' | 'right';
   log: (message: string) => void;
 }
 
@@ -52,6 +54,7 @@ export class ToolControls {
   private tool: Tool = 'select';
   private group: HTMLElement | null = null;
   private items: Partial<Record<ItemKey, HTMLElement>> = {};
+  private readonly labels = new Map<HTMLElement, string>();
   private hand: { surface: HTMLElement; abort: AbortController } | null = null;
   private readonly abort = new AbortController();
 
@@ -120,20 +123,26 @@ export class ToolControls {
     this.host.log(`group created around ${nodes.length} cards`);
   }
 
-  /* After the ink defaults changed. */
+  /* After the ink defaults or the column side changed. */
   reflect(): void {
+    const placement = this.tooltipSide();
     for (const tool of TOOLS) this.items[tool]?.toggleClass('is-active', this.tool === tool);
+    for (const [el, label] of this.labels) setTooltip(el, label, { placement });
     const color = this.items.color;
     if (color) {
       color.className = 'canvas-control-item icor-canvases-ink-item icor-canvases-ink-color';
       if (this.ink.color) color.addClass(`icor-canvases-ink-color-${this.ink.color}`);
-      setTooltip(color, `Ink colour: ${INK_COLOR_NAMES[this.ink.color]}`, { placement: 'left' });
+      setTooltip(color, `Ink colour: ${INK_COLOR_NAMES[this.ink.color]}`, { placement });
     }
     const width = this.items.width;
     if (width) {
       width.className = `canvas-control-item icor-canvases-ink-item icor-canvases-ink-width icor-canvases-ink-width-${this.ink.width}`;
-      setTooltip(width, `Stroke width: ${WIDTH_LABELS[this.ink.width]}`, { placement: 'left' });
+      setTooltip(width, `Stroke width: ${WIDTH_LABELS[this.ink.width]}`, { placement });
     }
+  }
+
+  private tooltipSide(): 'left' | 'right' {
+    return this.host.side() === 'left' ? 'right' : 'left';
   }
 
   dispose(): void {
@@ -143,6 +152,7 @@ export class ToolControls {
     this.group?.detach();
     this.group = null;
     this.items = {};
+    this.labels.clear();
   }
 
   private selectedNodes(): CanvasNode[] {
@@ -256,7 +266,8 @@ export class ToolControls {
     const el = group.createDiv({ cls: ['canvas-control-item', 'icor-canvases-ink-item'], attr: { role: 'button', tabindex: '0' } });
     setIcon(el, icon);
     if (tooltip) {
-      setTooltip(el, tooltip, { placement: 'left' });
+      this.labels.set(el, tooltip);
+      setTooltip(el, tooltip, { placement: this.tooltipSide() });
       el.setAttribute('aria-label', tooltip);
     }
     el.addEventListener(
@@ -286,7 +297,7 @@ export class ToolControls {
   private pickColor(): void {
     const anchor = this.items.color;
     if (!anchor) return;
-    openColorPicker(anchor, 'left', this.ink.color, (color) => {
+    openColorPicker(anchor, 'side', this.ink.color, (color) => {
       this.ink.setColor(color);
       this.reflect();
     });
@@ -295,7 +306,7 @@ export class ToolControls {
   private pickWidth(): void {
     const anchor = this.items.width;
     if (!anchor) return;
-    openWidthPicker(anchor, 'left', this.ink.width, (width) => {
+    openWidthPicker(anchor, 'side', this.ink.width, (width) => {
       this.ink.setWidth(width);
       this.reflect();
     });
