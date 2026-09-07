@@ -72,6 +72,20 @@ export class CanvasRegistry {
     return null;
   }
 
+  /* Obsidian's status bar sits over the bottom right corner; its height
+     goes on the wrapper so the zoom bar and the minimap clear it, zero
+     when it is hidden. Measured at bind, on resize, layout and theme
+     changes; never per frame. */
+  private measureStatusBar(wrapper: HTMLElement): void {
+    const bar = wrapper.doc.querySelector<HTMLElement>('.status-bar');
+    const height = bar && wrapper.win.getComputedStyle(bar).display !== 'none' ? bar.offsetHeight : 0;
+    wrapper.setCssProps({ '--icor-canvases-status-bar-height': `${height}px` });
+  }
+
+  refreshStatusBar(): void {
+    for (const binding of this.bindings.values()) this.measureStatusBar(binding.canvas.wrapperEl);
+  }
+
   /* The theme changed: the minimaps read their colours again. */
   refreshTheme(): void {
     for (const binding of this.bindings.values()) binding.minimap?.redraw();
@@ -119,6 +133,7 @@ export class CanvasRegistry {
     /* The plugin's own class on the wrapper scopes its stylesheet rules
        that reach a core element under it (the group label). */
     canvas.wrapperEl.addClass('icor-canvases-wrapper');
+    this.measureStatusBar(canvas.wrapperEl);
     canvas.wrapperEl.toggleClass('icor-canvases-controls-left', s.controlsSide === 'left');
     binding.disposers.push(() => canvas.wrapperEl.removeClass('icor-canvases-wrapper', 'icor-canvases-controls-left'));
     /* One wrap of the selection toolbar's render, shared. */

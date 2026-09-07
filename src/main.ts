@@ -47,11 +47,18 @@ export default class CanvasesPlugin extends Plugin {
 
     const sweep = (): void => {
       this.registry.sweep();
+      this.registry.refreshStatusBar();
       this.footers.sweep();
       this.backlinks.sweep();
     };
     this.registerEvent(this.app.workspace.on('layout-change', sweep));
-    this.registerEvent(this.app.workspace.on('css-change', () => this.registry.refreshTheme()));
+    this.registerEvent(
+      this.app.workspace.on('css-change', () => {
+        this.registry.refreshTheme();
+        this.registry.refreshStatusBar();
+      }),
+    );
+    this.registerEvent(this.app.workspace.on('resize', () => this.registry.refreshStatusBar()));
     this.registerEvent(this.app.workspace.on('active-leaf-change', sweep));
     this.registerEvent(
       this.app.workspace.on('file-open', () => {

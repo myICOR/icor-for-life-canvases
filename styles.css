@@ -115,11 +115,13 @@
   display: none;
 }
 
-/* The zoom bar, bottom right: fit, zoom out, the percentage, zoom in. */
+/* The zoom bar, bottom right: fit, zoom out, the percentage, zoom in.
+   Both it and the minimap sit above Obsidian's status bar, whose height
+   the registry measures onto the wrapper (zero when it is hidden). */
 .icor-canvases-zoom-bar {
   position: absolute;
   right: var(--size-4-2);
-  bottom: var(--size-4-2);
+  bottom: calc(var(--size-4-2) + var(--icor-canvases-status-bar-height));
   z-index: var(--layer-cover);
   font-size: var(--font-ui-medium);
 }
@@ -144,7 +146,7 @@
 .icor-canvases-minimap {
   position: absolute;
   right: var(--size-4-2);
-  bottom: calc(var(--size-4-2) * 2 + var(--size-4-8) + var(--size-4-2));
+  bottom: calc(var(--size-4-2) * 2 + var(--size-4-8) + var(--size-4-2) + var(--icor-canvases-status-bar-height));
   width: calc(var(--size-4-1) * 55);
   height: calc(var(--size-4-1) * 35);
   z-index: var(--layer-cover);
@@ -165,13 +167,6 @@
   width: 100%;
   height: 100%;
   display: block;
-}
-
-/* The percentage flyout: a list, above its button. */
-.canvas-submenu.icor-canvases-flyout-above {
-  bottom: calc(var(--icor-canvases-flyout-bottom) + var(--size-4-1));
-  right: var(--icor-canvases-flyout-right);
-  top: auto;
 }
 
 .icor-canvases-flyout-list {
@@ -283,22 +278,10 @@
   position: fixed;
   z-index: var(--layer-menu);
   top: var(--icor-canvases-flyout-top);
-  left: auto;
-  right: auto;
-  transform: none;
-}
-
-.canvas-submenu.icor-canvases-flyout-left {
-  right: calc(var(--icor-canvases-flyout-right) + var(--size-4-1));
-}
-
-.canvas-submenu.icor-canvases-flyout-right {
-  left: calc(var(--icor-canvases-flyout-left) + var(--size-4-1));
-}
-
-.canvas-submenu.icor-canvases-flyout-below {
   left: var(--icor-canvases-flyout-left);
-  transform: translate(-50%, var(--size-4-1));
+  right: auto;
+  bottom: auto;
+  transform: none;
 }
 
 .icor-canvases-flyout-grid {
