@@ -30,6 +30,7 @@ export class NodeToolbars {
   private unsubscribe: Unsubscribe | null = null;
   private readonly abort = new AbortController();
   private readonly roots = new Map<CanvasNode, HTMLElement>();
+  private disposed = false;
 
   constructor(private readonly canvas: Canvas, private readonly host: ToolbarHost) {}
 
@@ -55,6 +56,9 @@ export class NodeToolbars {
   }
 
   decorate(node: CanvasNode): void {
+    /* A card added in the tick that disposed the toolbars decorates on
+       the next microtask; nothing must be left behind then. */
+    if (this.disposed) return;
     if (!this.host.enabled() || !isFileNode(node)) {
       this.strip(node);
       return;
@@ -69,6 +73,7 @@ export class NodeToolbars {
   }
 
   dispose(): void {
+    this.disposed = true;
     this.abort.abort();
     this.unsubscribe?.();
     this.restoreAddNode?.();

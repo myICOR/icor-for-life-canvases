@@ -283,10 +283,17 @@
 }
 
 /* The footer under a note, next to the backlinks block. */
+/* Padding, not margin, above the rule: reading view measures the last
+   section up to this block's offset, and a margin would drift the
+   section's virtual height. */
 .icor-canvases-footer {
   border-top: var(--border-width) solid var(--background-modifier-border);
   padding-top: var(--size-4-3);
-  margin-top: var(--size-4-4);
+  padding-bottom: var(--size-4-3);
+}
+
+.icor-canvases-footer-heading {
+  margin-top: 0;
 }
 
 .icor-canvases-footer-heading {

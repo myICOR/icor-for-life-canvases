@@ -36,6 +36,23 @@ Versions follow [Semantic Versioning](https://semver.org/).
 - Settings: the modifier, toolbar on or off, footer on or off, pen colour,
   pen width, a stylus always draws, debug logging.
 
+### Fixed (Flint's review of 0.1.0, before the first tag)
+- A locked (read-only) canvas refuses every ink write, including undo
+  last stroke, clear all and the command, not only drawing.
+- Ink written by a newer version of the plugin is left untouched by an
+  older one; a stroke on such a canvas shows a notice instead of
+  rewriting the newer ink as version 1.
+- The ink layer declares `view` among the members it needs, so a build
+  without it degrades with a notice instead of throwing after the save
+  wrap is installed.
+- A card added in the same tick the canvas unloads no longer gets an
+  ownerless toolbar; a pending index refresh is cancelled at unload; a
+  stroke in progress stays visible when the file changes underneath;
+  the post-processor sweep places footers instead of rebuilding them;
+  the footer uses padding above its rule so reading view's section
+  measure does not drift; two re-check greps in the architecture doc
+  corrected and added.
+
 ### Known limits
 - Built against and verified live on Obsidian 1.13.7 only. The private
   canvas surface it reads is listed in `docs/architecture.md` with the

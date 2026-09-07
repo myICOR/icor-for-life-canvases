@@ -63,6 +63,7 @@ export default class CanvasesPlugin extends Plugin {
   override onunload(): void {
     this.registry.disposeAll();
     this.footers.disposeAll();
+    this.index.dispose();
   }
 
   async saveSettings(): Promise<void> {

@@ -34,7 +34,7 @@ export class Footers {
   /* A preview has no footer section until it renders (a hidden tab has
      none), so the Markdown post-processor calls this on every render and
      the sweep binds the view once its footer exists. */
-  readonly scheduleSweep = debounce(() => this.sweep(), 50, true);
+  readonly scheduleSweep = debounce(() => this.sweep(false), 50, true);
 
   constructor(private readonly host: FooterHost) {}
 
@@ -43,8 +43,10 @@ export class Footers {
     this.sweep();
   }
 
-  /* Binds every Markdown view not yet bound and re-renders the rest. */
-  sweep(): void {
+  /* Binds every Markdown view not yet bound; re-renders the rest, or
+     with `rerender` false (the post-processor's sweep, which fires on
+     every rendered section) only places them. */
+  sweep(rerender = true): void {
     if (!this.host.enabled()) {
       this.disposeAll(false);
       return;
@@ -52,7 +54,10 @@ export class Footers {
     for (const leaf of this.host.app.workspace.getLeavesOfType('markdown')) {
       const view = leaf.view;
       if (!(view instanceof MarkdownView)) continue;
-      this.render(this.bindings.get(view) ?? this.bind(view));
+      const bound = this.bindings.get(view);
+      if (!bound) this.render(this.bind(view));
+      else if (rerender) this.render(bound);
+      else this.place(bound);
     }
   }
 

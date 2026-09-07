@@ -107,6 +107,9 @@ export function readInk(data: unknown): InkStroke[] {
    set removes the key, and an empty `metadata` with it. */
 export function withInk(data: CanvasFileData, strokes: InkStroke[]): CanvasFileData {
   const metadata: Record<string, unknown> = { ...(isRecord(data.metadata) ? data.metadata : {}) };
+  /* Ink written by a newer build is never rewritten as this version. */
+  const stored = metadata[METADATA_KEY];
+  if (isRecord(stored) && typeof stored.version === 'number' && stored.version > METADATA_VERSION) return data;
   if (strokes.length === 0) {
     delete metadata[METADATA_KEY];
   } else {

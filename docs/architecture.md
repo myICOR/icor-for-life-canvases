@@ -82,7 +82,8 @@ against the next bundle before shipping on it.
 | `eState.match.nodeId` | open state | The canvas view's `setEphemeralState` selects the node and pans to it. `content` and `matches` are read too and must be present. | `void 0!==t.match){var n=this.canvas,i=t.match,r=i.nodeId` |
 | `file-menu` with source `'canvas-menu'` | public event | Fired from a file node's context menu; the two menu items hang on it. | `trigger("file-menu",t,r,"canvas-menu")` |
 | `.embedded-backlinks` | CSS | The "Backlinks in document" element every Markdown view owns, appended to the preview renderer's footer section or the `.cm-sizer` on each mode's `show()`. Verified live: with "Backlinks in document" off the footer section is empty and the renderer never attaches it, so the element is not in the DOM at all; the block then goes to the end of `.markdown-preview-sizer` (reading) or `.cm-sizer` (editing) and is moved back to the end whenever the renderer attaches a section after it. | `n.backlinksEl=createDiv("embedded-backlinks")` |
-| `.markdown-preview-sizer`, `.cm-sizer` | CSS | The two sizers the block falls back to. | `createDiv("markdown-preview-sizer")`, `createDiv("cm-sizer")` |
+| `.markdown-preview-sizer`, `.cm-sizer` | CSS | The two sizers the block falls back to. | `createDiv("markdown-preview-sizer markdown-preview-section")`, `createDiv("cm-sizer")` |
+| `.canvas-wrapper.mod-zoomed-out` | CSS | Set on the wrapper each frame past the zoom breakpoint; core hides card labels under it, the plugin hides the toolbar and the pill. | `toggleClass("mod-zoomed-out"` |
 | `data-mode` on `MarkdownView.containerEl` | attribute | Set on every mode switch; the footer follows it with a MutationObserver. | `containerEl.setAttribute("data-mode",this.getMode())` |
 
 Not used, and known: the `canvas:node-menu`, `canvas:edge-menu` and

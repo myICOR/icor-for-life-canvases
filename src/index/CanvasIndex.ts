@@ -75,6 +75,14 @@ export class CanvasIndex {
     return [...seen];
   }
 
+  /* At unload: a pending flush must not read a file and call listeners
+     after the plugin is gone. */
+  dispose(): void {
+    this.flush.cancel();
+    this.pending.clear();
+    this.listeners.clear();
+  }
+
   subscribe(listener: () => void): Unsubscribe {
     this.listeners.add(listener);
     return () => {

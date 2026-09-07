@@ -24,6 +24,14 @@ test('an empty stroke set removes the key, and metadata with it when nothing els
   assert.deepEqual(kept.metadata, { other: 1 });
 });
 
+test('ink from a newer version is read as none and never rewritten', () => {
+  const newer = { nodes: [], edges: [], metadata: { [METADATA_KEY]: { version: 2, strokes: [stroke], extra: true } } };
+  assert.deepEqual(readInk(newer), []);
+  assert.equal(withInk(newer, [stroke]), newer, 'the same object comes back, so the commit is a no-op');
+  assert.equal(withInk(newer, []), newer);
+  assert.equal(newer.metadata[METADATA_KEY].version, 2);
+});
+
 test('readInk drops what it cannot trust, stroke by stroke', () => {
   const bad = [
     { id: '', color: '1', width: 4, points: [0, 0] },

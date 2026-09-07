@@ -34,7 +34,7 @@ export interface InkOptions {
 const PEN_ERASER_BUTTON = 32;
 
 /* What the layer reads or calls on the canvas. */
-export const INK_MEMBERS: readonly CanvasMember[] = ['canvasEl', 'wrapperEl', 'data', 'readonly', 'requestSave', 'setData', 'posFromEvt'];
+export const INK_MEMBERS: readonly CanvasMember[] = ['canvasEl', 'wrapperEl', 'view', 'data', 'readonly', 'requestSave', 'setData', 'posFromEvt'];
 
 const CLEAR_WINDOW_MS = 5000;
 /* Eraser reach on screen, converted to canvas units at the current zoom. */
@@ -132,6 +132,9 @@ export class InkLayer {
     if (this.overlay.parentElement !== canvasEl) canvasEl.appendChild(this.overlay);
     this.overlay.empty();
     for (const stroke of readInk(this.canvas.data)) this.overlay.appendChild(this.pathFor(stroke.id, stroke.color, stroke.width, stroke.points));
+    /* A stroke in progress while the file changed underneath stays
+       visible; it commits on top of the fresh data at pointerup. */
+    if (this.drawing) this.overlay.appendChild(this.drawing.path);
   }
 
   toggleDraw(): void {
@@ -379,7 +382,18 @@ export class InkLayer {
   /* The one write path. A new top-level object, never a mutation: the
      canvas's history holds the old one. */
   private commit(strokes: InkStroke[]): void {
-    this.canvas.data = withInk(this.canvas.data, strokes);
+    /* Undo last stroke, clear all and the command reach here without
+       passing a mode switch, so the lock is checked here as well. */
+    if (this.canvas.readonly) {
+      new Notice(READONLY);
+      return;
+    }
+    const next = withInk(this.canvas.data, strokes);
+    if (next === this.canvas.data) {
+      new Notice('This canvas carries ink from a newer version of the plugin. Update the plugin to draw on it.');
+      return;
+    }
+    this.canvas.data = next;
     this.canvas.requestSave();
     this.render();
     this.log(`ink saved: ${strokes.length} stroke(s)`);
