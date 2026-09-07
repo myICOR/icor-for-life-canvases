@@ -139,12 +139,58 @@ function boxOfNode(node: CanvasNodeData): Box | null {
 
 export const UNNAMED_GROUP = 'unnamed group';
 
+interface GroupBox {
+  node: CanvasNodeData;
+  box: Box;
+}
+
+/* Groups bucketed on a coarse grid so a card tests only the groups whose
+   box covers its cell; a group spanning more cells than the cap goes
+   into a list every card tests. Linear in cards for a real canvas. */
+const CELL = 1000;
+const CELL_CAP = 256;
+
+export class GroupGrid {
+  private readonly cells = new Map<string, GroupBox[]>();
+  private readonly wide: GroupBox[] = [];
+
+  constructor(groups: readonly GroupBox[]) {
+    for (const g of groups) {
+      const x0 = Math.floor(g.box.minX / CELL);
+      const x1 = Math.floor(g.box.maxX / CELL);
+      const y0 = Math.floor(g.box.minY / CELL);
+      const y1 = Math.floor(g.box.maxY / CELL);
+      if ((x1 - x0 + 1) * (y1 - y0 + 1) > CELL_CAP) {
+        this.wide.push(g);
+        continue;
+      }
+      for (let x = x0; x <= x1; x++) {
+        for (let y = y0; y <= y1; y++) {
+          const key = `${x},${y}`;
+          const list = this.cells.get(key) ?? [];
+          list.push(g);
+          this.cells.set(key, list);
+        }
+      }
+    }
+  }
+
+  /* The candidates for a box: the groups over the cell of its top-left
+     corner (a containing group covers that cell too) and the wide ones. */
+  candidates(box: Box): GroupBox[] {
+    const local = this.cells.get(`${Math.floor(box.minX / CELL)},${Math.floor(box.minY / CELL)}`);
+    if (!local) return this.wide;
+    return this.wide.length ? [...local, ...this.wide] : local;
+  }
+}
+
 /* The groups whose box contains the node's, innermost (smallest) first.
    Touching edges count as inside, as the canvas's own containment does. */
-export function containingGroups(node: CanvasNodeData, groups: readonly { node: CanvasNodeData; box: Box }[]): GroupRef[] {
+export function containingGroups(node: CanvasNodeData, groups: readonly GroupBox[] | GroupGrid): GroupRef[] {
   const box = boxOfNode(node);
   if (!box) return [];
-  return groups
+  const candidates = groups instanceof GroupGrid ? groups.candidates(box) : groups;
+  return candidates
     .filter((g) => g.node.id !== node.id && containsBox(g.box, box))
     .sort((a, b) => boxArea(a.box) - boxArea(b.box))
     .map((g) => ({ nodeId: g.node.id, label: typeof g.node.label === 'string' ? g.node.label.trim() : '' }));
@@ -161,21 +207,30 @@ export function placementsOf(canvasPath: string, data: CanvasFileData): CanvasPl
   const edges = Array.isArray(data.edges) ? data.edges.filter(isEdge) : [];
   const byId = new Map<string, CanvasNodeData>();
   for (const n of nodes) byId.set(n.id, n);
-  const groups: { node: CanvasNodeData; box: Box }[] = [];
+  const groups: GroupBox[] = [];
   for (const n of nodes) {
     if (n.type !== 'group') continue;
     const box = boxOfNode(n);
     if (box) groups.push({ node: n, box });
   }
+  const grid = new GroupGrid(groups);
+  /* Edges indexed by node once, so the parse is linear in cards plus
+     edges (Vex: the per-card scan of every edge froze the UI on a
+     20k-card, 50k-edge file). */
+  const edgesByNode = new Map<string, CanvasEdgeData[]>();
+  for (const edge of edges) {
+    if (edge.fromNode === edge.toNode) continue;
+    for (const id of [edge.fromNode, edge.toNode]) {
+      const list = edgesByNode.get(id) ?? [];
+      list.push(edge);
+      edgesByNode.set(id, list);
+    }
+  }
   for (const node of nodes) {
     if (node.type !== 'file' || typeof node.file !== 'string' || node.file.length === 0) continue;
     const connections: Connection[] = [];
-    for (const edge of edges) {
-      if (edge.fromNode === edge.toNode) continue;
-      let otherId: string;
-      if (edge.fromNode === node.id) otherId = edge.toNode;
-      else if (edge.toNode === node.id) otherId = edge.fromNode;
-      else continue;
+    for (const edge of edgesByNode.get(node.id) ?? []) {
+      const otherId = edge.fromNode === node.id ? edge.toNode : edge.fromNode;
       const otherData = byId.get(otherId);
       if (!otherData) continue;
       const other = otherNode(otherData);
@@ -185,7 +240,7 @@ export function placementsOf(canvasPath: string, data: CanvasFileData): CanvasPl
       connections.push(connection);
     }
     const list = out.get(node.file) ?? [];
-    list.push({ canvasPath, nodeId: node.id, connections, groups: containingGroups(node, groups) });
+    list.push({ canvasPath, nodeId: node.id, connections, groups: containingGroups(node, grid) });
     out.set(node.file, list);
   }
   return out;

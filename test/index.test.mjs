@@ -98,7 +98,7 @@ test('a malformed file yields null; a file with no file nodes yields an empty ma
   assert.equal(parseCanvasFile('x.canvas', JSON.stringify({ nodes: 'nope', edges: null })).size, 0);
 });
 
-test("Tom's test canvas: two file nodes, one edge labelled test", () => {
+test('a real canvas export: two file nodes, one edge labelled test', () => {
   const text = JSON.stringify({
     nodes: [
       { id: 'e17502c51d9fbb3a', x: 0, y: 0, width: 400, height: 400, type: 'file', file: 'Logs/one.md' },
@@ -106,7 +106,7 @@ test("Tom's test canvas: two file nodes, one edge labelled test", () => {
     ],
     edges: [{ id: '6f260753d47ae15c', fromNode: 'fa8ac4d044562538', fromSide: 'right', toNode: 'e17502c51d9fbb3a', toSide: 'left', color: '1', label: 'test' }],
   });
-  const placements = parseCanvasFile('00 Daily Scratchpad/2026-09-06_canvas.canvas', text);
+  const placements = parseCanvasFile('Scratch/example.canvas', text);
   const one = placements.get('Logs/one.md')[0];
   const two = placements.get('Logs/two.md')[0];
   assert.equal(one.connections[0].direction, 'in');
@@ -141,4 +141,22 @@ test('a placement lists the groups around its card, innermost first, and a canva
   assert.deepEqual(p.get('Maps/child.canvas')[0].groups, []);
   assert.equal(p.get('Maps/child.canvas')[0].nodeId, 'child', 'a nested canvas is placed like a note');
   assert.deepEqual(containingGroups({ id: 'x', type: 'file', x: 'nope' }, []), [], 'a card without a box is in no group');
+});
+
+test('a 20k-card, 50k-edge canvas with 200 groups parses in well under a second (Vex LOW-3)', () => {
+  const nodes = [];
+  for (let i = 0; i < 20000; i++) nodes.push({ id: `n${i}`, type: 'file', file: `N/${i % 5000}.md`, x: (i % 200) * 500, y: Math.floor(i / 200) * 500, width: 400, height: 400 });
+  for (let g = 0; g < 200; g++) nodes.push({ id: `g${g}`, type: 'group', label: `G${g}`, x: (g % 20) * 5000 - 100, y: Math.floor(g / 20) * 5000 - 100, width: 5200, height: 5200 });
+  const edges = [];
+  for (let e = 0; e < 50000; e++) edges.push({ id: `e${e}`, fromNode: `n${e % 20000}`, toNode: `n${(e * 7 + 13) % 20000}` });
+  const t0 = performance.now();
+  const placements = placementsOf('big.canvas', { nodes, edges });
+  const ms = performance.now() - t0;
+  assert.equal(placements.size, 5000);
+  let connections = 0;
+  let grouped = 0;
+  for (const list of placements.values()) for (const p of list) { connections += p.connections.length; if (p.groups.length) grouped++; }
+  assert.ok(connections >= 99000, `every edge end is a connection, got ${connections}`);
+  assert.ok(grouped > 15000, `cards inside a group are found, got ${grouped}`);
+  assert.ok(ms < 2500, `parsed in ${Math.round(ms)} ms; the ceiling is generous, the old parser took ten seconds`);
 });
