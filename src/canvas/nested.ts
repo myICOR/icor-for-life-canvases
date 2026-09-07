@@ -16,6 +16,7 @@ import type { Canvas } from './internals';
 import { openCanvasAtNode } from './navigate';
 import type { CanvasIndex, Unsubscribe } from '../index/CanvasIndex';
 import { basename } from '../index/parse';
+import { childName, staysInVault, validateCanvasName } from './naming';
 
 export interface NestedHost {
   app: App;
@@ -53,11 +54,15 @@ class NameModal extends Modal {
     this.setTitle('New canvas');
     let submitted = false;
     const submit = (): void => {
-      const name = this.value.trim();
-      if (!name || submitted) return;
+      if (submitted) return;
+      const verdict = validateCanvasName(this.value);
+      if (!verdict.ok) {
+        new Notice(verdict.reason);
+        return;
+      }
       submitted = true;
       this.close();
-      this.onSubmit(name);
+      this.onSubmit(verdict.name);
     };
     new Setting(this.contentEl).setName('Name').addText((text) => {
       text.setValue(this.value).onChange((v) => {
@@ -77,15 +82,6 @@ class NameModal extends Modal {
   override onClose(): void {
     this.contentEl.empty();
   }
-}
-
-/* The first free "<parent> - n" in the parent's folder. */
-export function childName(parentBasename: string, taken: (name: string) => boolean): string {
-  for (let n = 1; n < 10000; n++) {
-    const name = `${parentBasename} - ${n}`;
-    if (!taken(name)) return name;
-  }
-  return `${parentBasename} - ${Date.now()}`;
 }
 
 export class NestedCanvases {
@@ -200,6 +196,8 @@ export class NestedCanvases {
 
   private async create(path: string, pos: Pos, size?: Size): Promise<void> {
     const { canvas, host } = this;
+    /* Belt and braces under the validated name. */
+    if (!staysInVault(path)) return;
     if (host.app.vault.getAbstractFileByPath(path)) {
       new Notice(`A file named ${basename(path)} is already there.`);
       return;

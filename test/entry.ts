@@ -4,6 +4,7 @@
 export * from '../src/canvas/format';
 export * from '../src/canvas/geometry';
 export * from '../src/canvas/flyoutPlacement';
+export * from '../src/canvas/naming';
 export * from '../src/canvas/shapeModel';
 export * from '../src/canvas/inkModel';
 export * from '../src/index/parse';
