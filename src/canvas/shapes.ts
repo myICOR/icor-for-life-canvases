@@ -1,6 +1,8 @@
 /* Shapes and colours for text cards. When one text card is selected, the
- * canvas's floating toolbar gets three more buttons: switch shape, outline
- * colour, fill colour, each opening a flyout with every option visible.
+ * canvas's floating toolbar gets more buttons: switch shape, fill colour,
+ * text colour, each opening a flyout with every option visible. The
+ * outline is the card's own colour, which the canvas's palette button
+ * sets and core renders as the border.
  * The choice is written on the node's own data (`icorShape`, `icorStyle`;
  * see shapeModel.ts) through the node's unknown keys and saved by the
  * canvas, so undo, redo, copy and paste carry it. Rendering is an
@@ -12,15 +14,14 @@
 import { Menu, Notice, setIcon, setTooltip } from 'obsidian';
 import type { App } from 'obsidian';
 import { Flyout, flyoutOption } from './flyout';
-import { around, hasUnknownData, isEdge, isTextNode, onNodeMenu } from './internals';
+import { around, hasUnknownData, isEdge, isTextNode, nodeColor, onNodeMenu } from './internals';
 import type { Canvas, CanvasNode } from './internals';
 import type { NodeAddHook } from './nodeHook';
 import type { SelectionMenuHook } from './selectionMenu';
-import { CLIPPED_SHAPES, OUTLINE_POINTS, PALETTE, SHAPES, SHAPE_LABELS, colorLabel, colorValue, isHexColor, readShape, withShape } from './shapeModel';
+import { CLIPPED_SHAPES, OUTLINE_POINTS, PALETTE, SHAPES, SHAPE_LABELS, colorLabel, colorValue, isHexColor, legacyStroke, readShape, withShape } from './shapeModel';
 import type { Shape, ShapeColor, ShapeStyle } from './shapeModel';
 
 export const SHAPE_ATTR = 'data-icor-canvases-shape';
-const STROKE_VAR = '--icor-canvases-stroke';
 const FILL_VAR = '--icor-canvases-fill';
 const OUTLINE_CLASS = 'icor-canvases-shape-outline';
 const BUTTON_CLASS = 'icor-canvases-shape-button';
@@ -108,6 +109,7 @@ export class NodeShapes {
 
   private watch(node: CanvasNode): void {
     if (this.disposed || this.restores.has(node) || !isTextNode(node) || !hasUnknownData(node)) return;
+    this.migrate(node);
     const apply = (): void => this.apply(node);
     this.restores.set(
       node,
@@ -121,6 +123,16 @@ export class NodeShapes {
     this.apply(node);
   }
 
+  /* A 0.2.0 outline colour becomes the card's own colour (when the card
+     has none) and leaves the data; the next save writes the result. */
+  private migrate(node: CanvasNode): void {
+    const stroke = legacyStroke(node.unknownData);
+    if (stroke === null) return;
+    if (stroke && nodeColor(node) === '' && typeof node.setColor === 'function') node.setColor(stroke);
+    node.unknownData = withShape(node.unknownData, {});
+    this.host.log(`shape: outline colour migrated on ${node.id}`);
+  }
+
   /* DOM writes only where the value differs from what is on the element. */
   private apply(node: CanvasNode): void {
     if (this.disposed) return;
@@ -131,11 +143,9 @@ export class NodeShapes {
       if (shape) el.setAttribute(SHAPE_ATTR, shape);
       else el.removeAttribute(SHAPE_ATTR);
     }
-    this.setVar(el, STROKE_VAR, colorValue(style.stroke));
     this.setVar(el, FILL_VAR, colorValue(style.fill));
     /* The colour rules apply only to cards that carry a colour, so every
-       other card keeps the canvas's own border and selection look. */
-    el.toggleClass('icor-canvases-stroked', style.stroke !== '');
+       other card keeps the canvas's own look. */
     el.toggleClass('icor-canvases-filled', style.fill !== '');
     const clipped = shape !== null && (CLIPPED_SHAPES as readonly string[]).includes(shape);
     let outline = el.querySelector<SVGSVGElement>(`:scope > .${OUTLINE_CLASS}`);
@@ -161,8 +171,7 @@ export class NodeShapes {
   private clear(node: CanvasNode): void {
     const el = node.nodeEl;
     el.removeAttribute(SHAPE_ATTR);
-    el.removeClass('icor-canvases-stroked', 'icor-canvases-filled');
-    el.style.removeProperty(STROKE_VAR);
+    el.removeClass('icor-canvases-filled');
     el.style.removeProperty(FILL_VAR);
     el.querySelector(`:scope > .${OUTLINE_CLASS}`)?.detach();
   }
@@ -178,7 +187,6 @@ export class NodeShapes {
     if (!node || isEdge(node) || !isTextNode(node) || !hasUnknownData(node)) return;
     if (menuEl.querySelector(`.${BUTTON_CLASS}`)) return;
     this.menuButton(menuEl, 'shapes', 'Switch shape', (anchor) => this.openShapes(anchor, node));
-    this.menuButton(menuEl, 'square', 'Outline colour', (anchor) => this.openColor(anchor, node, 'stroke'));
     this.menuButton(menuEl, 'paint-bucket', 'Fill colour', (anchor) => this.openColor(anchor, node, 'fill'));
   }
 
@@ -224,20 +232,21 @@ export class NodeShapes {
     }
   }
 
-  private openColor(anchor: HTMLElement, node: CanvasNode, which: 'stroke' | 'fill'): void {
+  private openColor(anchor: HTMLElement, node: CanvasNode, which: 'fill' | 'text'): void {
     const current = readShape(node.unknownData)[which];
     const pick = (color: ShapeColor): void => this.set(node, { [which]: color });
+    const label = which === 'fill' ? 'Fill' : 'Text';
     Flyout.open({
       anchor,
       placement: 'below',
       build: (panel, close) => {
-        const choices: ShapeColor[] = ['', ...PALETTE, 'transparent'];
+        const choices: ShapeColor[] = which === 'fill' ? ['', ...PALETTE, 'transparent'] : ['', ...PALETTE];
         for (const color of choices) {
           const cls = ['canvas-color-picker-item', 'icor-canvases-swatch'];
           if (color === '') cls.push('icor-canvases-swatch-card');
           else if (color === 'transparent') cls.push('icor-canvases-swatch-none');
           else cls.push(`mod-canvas-color-${color}`);
-          flyoutOption(panel, cls, `${which === 'stroke' ? 'Outline' : 'Fill'}: ${colorLabel(color)}`, color === current, () => {
+          flyoutOption(panel, cls, `${label}: ${colorLabel(color)}`, color === current, () => {
             pick(color);
             close();
           });

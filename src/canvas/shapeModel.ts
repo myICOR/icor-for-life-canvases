@@ -1,5 +1,5 @@
 /* A text card's shape and colours as data. They live on the node's own
- * data as `icorShape: string` and `icorStyle: { stroke?, fill? }`, which
+ * data as `icorShape: string` and `icorStyle: { fill?, text? }`, which
  * the canvas keeps in the node's unknown keys across a load and a save
  * (1.13.7: node.setData keeps every key it does not know in
  * `unknownData`, node.getData spreads them back). Pure: no DOM, no
@@ -39,17 +39,20 @@ export const OUTLINE_POINTS: Readonly<Record<string, string>> = {
 export const SHAPE_KEY = 'icorShape';
 export const STYLE_KEY = 'icorStyle';
 
-/* A colour for the outline or the fill: '' (the card's own), '1' to '6'
-   (the canvas palette), 'transparent', or a hex colour. */
+/* A colour for the fill or the text: '' (the card's own), '1' to '6'
+   (the canvas palette), 'transparent' (fill only), or a hex colour. The
+   outline is the card's own colour, set with the canvas's palette
+   button; 0.2.0 wrote an `icorStyle.stroke`, which 0.3.0 migrates into
+   the card's colour and drops. */
 export type ShapeColor = string;
 
 export interface ShapeStyle {
   shape: Shape;
-  stroke: ShapeColor;
   fill: ShapeColor;
+  text: ShapeColor;
 }
 
-export const DEFAULT_STYLE: ShapeStyle = { shape: 'card', stroke: '', fill: '' };
+export const DEFAULT_STYLE: ShapeStyle = { shape: 'card', fill: '', text: '' };
 
 export const PALETTE: readonly string[] = ['1', '2', '3', '4', '5', '6'];
 
@@ -74,9 +77,19 @@ export function readShape(data: unknown): ShapeStyle {
   if (!isRecord(data)) return { ...DEFAULT_STYLE };
   const shape = isShape(data[SHAPE_KEY]) ? data[SHAPE_KEY] : 'card';
   const style = data[STYLE_KEY];
-  const stroke = isRecord(style) && isShapeColor(style.stroke) ? style.stroke : '';
   const fill = isRecord(style) && isShapeColor(style.fill) ? style.fill : '';
-  return { shape, stroke, fill };
+  const text = isRecord(style) && isShapeColor(style.text) && style.text !== 'transparent' ? style.text : '';
+  return { shape, fill, text };
+}
+
+/* The 0.2.0 outline colour, if the data still carries one: a palette
+   value or a hex colour that can become the card's own colour. */
+export function legacyStroke(data: unknown): string | null {
+  if (!isRecord(data)) return null;
+  const style = data[STYLE_KEY];
+  if (!isRecord(style) || !('stroke' in style)) return null;
+  const stroke = style.stroke;
+  return typeof stroke === 'string' && (PALETTE.includes(stroke) || isHexColor(stroke)) ? stroke : '';
 }
 
 /* A new data object with the style applied; default values remove their
@@ -88,8 +101,8 @@ export function withShape(data: Record<string, unknown>, patch: Partial<ShapeSty
   if (next.shape === 'card') delete out[SHAPE_KEY];
   else out[SHAPE_KEY] = next.shape;
   const style: Record<string, string> = {};
-  if (next.stroke) style.stroke = next.stroke;
   if (next.fill) style.fill = next.fill;
+  if (next.text) style.text = next.text;
   if (Object.keys(style).length === 0) delete out[STYLE_KEY];
   else out[STYLE_KEY] = style;
   return out;

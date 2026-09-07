@@ -738,7 +738,7 @@
 
 .icor-canvases-shape-outline polygon {
   fill: none;
-  stroke: var(--icor-canvases-stroke, var(--canvas-color));
+  stroke: var(--canvas-color);
   stroke-width: 1.5;
   stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
@@ -750,11 +750,8 @@
   stroke-width: 2.5;
 }
 
-/* Outline and fill colours, only on cards that carry one. */
-.icor-canvases-wrapper .canvas-node.icor-canvases-stroked > .canvas-node-container {
-  border-color: var(--icor-canvases-stroke);
-}
-
+/* The fill colour, only on cards that carry one. The outline is the
+   card's own colour, set by the canvas's palette button. */
 .icor-canvases-wrapper .canvas-node.icor-canvases-filled > .canvas-node-container {
   background-color: var(--icor-canvases-fill);
 }

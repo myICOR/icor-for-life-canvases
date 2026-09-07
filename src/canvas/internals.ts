@@ -30,6 +30,10 @@ export interface CanvasNode {
   getBBox(): BBox;
   getData(): CanvasNodeData;
   setData(data: CanvasNodeData): void;
+  /* '' or '1'..'6' or a hex string; `setColor(color, render)` is how the
+     canvas's own palette button writes it. */
+  color?: string;
+  setColor?(color: string, render?: boolean): void;
 }
 
 /* A file node carries `file` (a TFile once resolved, null before) and the
