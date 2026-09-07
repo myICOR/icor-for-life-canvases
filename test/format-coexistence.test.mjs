@@ -23,9 +23,13 @@ const fixture = () => ({
   topLevelForeign: { deep: { deeper: 1 } },
 });
 
+/* Our keys are stripped from the text card only (nodes[0]); every other
+   node must come back byte-identical, our keys included, so a write of
+   our keys onto a card we do not own would fail here. */
 const snapshot = (data) => {
   const { [METADATA_KEY]: _ink, ...metadataRest } = data.metadata ?? {};
-  const nodes = data.nodes.map((n) => {
+  const nodes = data.nodes.map((n, i) => {
+    if (i !== 0) return n;
     const { [SHAPE_KEY]: _shape, [STYLE_KEY]: _style, ...rest } = n;
     return rest;
   });
@@ -72,4 +76,6 @@ test('the whole file round-trips through both writes with the foreign keys intac
   const nodes = inked.nodes.map((n) => (n.type === 'text' ? withShape(withShape(n, { shape: 'diamond' }), { fill: '3' }) : n));
   const after = { ...inked, nodes };
   assert.equal(snapshot(after), beforeText);
+  assert.deepEqual(after.nodes[1], before.nodes[1], 'the file card is untouched, key for key');
+  assert.deepEqual(after.edges, before.edges);
 });
