@@ -25,6 +25,10 @@ of 0.2.0.
   M key, the command and a setting (on by default). Its node layer
   redraws only when cards change; its view rectangle redraws only while
   the canvas itself animates.
+- **A frame on shaped cards.** A selected or hovered shaped card shows
+  its full bounding rectangle as a thin accent frame with four corner
+  discs, so the resize edges can be found; core's own resize and
+  connector zones do the work. On touch the corner hit areas are 24px.
 - **Text colour** on text cards, and on a filled card without one, dark
   or light text picked from the fill's luminance.
 - `docs/canvas-format.md`: every key the plugin writes, its type,

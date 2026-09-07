@@ -868,6 +868,81 @@ html.icor-canvases-in-shape .cm-scroller {
   color: var(--icor-canvases-contrast);
 }
 
+/* The bounding frame of a shaped card: the rectangle core resizes from,
+   drawn as a thin accent line over the shape and under core's connector
+   dots (which live on the interaction layer above every card), with
+   four corner discs. Shown while the card is hovered (core shows its
+   resize cursors then) and while it is selected; the handles on
+   selection only. It takes no pointer: core's resizers do the work.
+   Line and discs keep their screen size across zoom. */
+.icor-canvases-frame {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  border: calc(var(--border-width) * var(--zoom-multiplier)) solid var(--interactive-accent);
+  opacity: 0;
+  z-index: 1;
+}
+
+.icor-canvases-wrapper .canvas-node:hover > .icor-canvases-frame,
+.icor-canvases-wrapper .canvas-node.is-selected > .icor-canvases-frame,
+.icor-canvases-wrapper .canvas-node.is-focused > .icor-canvases-frame {
+  opacity: 1;
+}
+
+.icor-canvases-wrapper .canvas-node.is-dragging > .icor-canvases-frame,
+.icor-canvases-wrapper.mod-readonly .icor-canvases-frame {
+  opacity: 0;
+}
+
+.icor-canvases-frame-handle {
+  position: absolute;
+  width: calc(var(--size-4-2) * var(--zoom-multiplier));
+  height: calc(var(--size-4-2) * var(--zoom-multiplier));
+  border-radius: 50%;
+  background-color: var(--background-primary);
+  border: calc(var(--border-width) * var(--zoom-multiplier)) solid var(--interactive-accent);
+  transform: translate(-50%, -50%);
+  display: none;
+}
+
+.icor-canvases-wrapper .canvas-node.is-selected > .icor-canvases-frame .icor-canvases-frame-handle,
+.icor-canvases-wrapper .canvas-node.is-focused > .icor-canvases-frame .icor-canvases-frame-handle {
+  display: block;
+}
+
+.icor-canvases-frame-handle[data-corner="topleft"] {
+  left: 0;
+  top: 0;
+}
+
+.icor-canvases-frame-handle[data-corner="topright"] {
+  left: 100%;
+  top: 0;
+}
+
+.icor-canvases-frame-handle[data-corner="bottomright"] {
+  left: 100%;
+  top: 100%;
+}
+
+.icor-canvases-frame-handle[data-corner="bottomleft"] {
+  left: 0;
+  top: 100%;
+}
+
+/* On touch, core's corner resizers are the hit areas; 24px at least. */
+.is-mobile .icor-canvases-wrapper .canvas-node-interaction-layer .canvas-node-resizer[data-resize="topright"],
+.is-mobile .icor-canvases-wrapper .canvas-node-interaction-layer .canvas-node-resizer[data-resize="bottomright"],
+.is-mobile .icor-canvases-wrapper .canvas-node-interaction-layer .canvas-node-resizer[data-resize="topleft"],
+.is-mobile .icor-canvases-wrapper .canvas-node-interaction-layer .canvas-node-resizer[data-resize="bottomleft"] {
+  width: var(--size-4-6);
+  height: var(--size-4-6);
+}
+
 /* The fill colour, only on cards that carry one. The outline is the
    card's own colour, set by the canvas's palette button. */
 .icor-canvases-wrapper .canvas-node.icor-canvases-filled > .canvas-node-container::before {

@@ -26,6 +26,13 @@ const FILL_VAR = '--icor-canvases-fill';
 const TEXT_VAR = '--icor-canvases-text';
 const PALETTE_VAR = (n: string): string => `--canvas-color-${n}`;
 const OUTLINE_CLASS = 'icor-canvases-shape-outline';
+/* The bounding frame and its four corner handles on a shaped card: the
+   rectangle core resizes from, made visible. Core's resize and connector
+   hit zones are elements on its interaction layer, sized to the card's
+   full rectangle and stacked above every card, so the frame only shows
+   where they are and never takes a pointer itself. */
+const FRAME_CLASS = 'icor-canvases-frame';
+const CORNERS = ['topleft', 'topright', 'bottomright', 'bottomleft'] as const;
 const BUTTON_CLASS = 'icor-canvases-shape-button';
 /* On the editor iframe's root element: the editor paints no background
    of its own over the shape's fill, and its text takes the card's colour.
@@ -214,6 +221,13 @@ export class NodeShapes {
     el.toggleClass('icor-canvases-contrast-light', contrast === 'light');
     /* A card being edited while its style changes: the editor follows. */
     if (el.hasClass('is-editing')) this.markEditor(node);
+    let frame = el.querySelector<HTMLElement>(`:scope > .${FRAME_CLASS}`);
+    if (shape && !frame) {
+      frame = el.createDiv({ cls: FRAME_CLASS, attr: { 'aria-hidden': 'true' } });
+      for (const corner of CORNERS) frame.createDiv({ cls: 'icor-canvases-frame-handle', attr: { 'data-corner': corner } });
+    } else if (!shape && frame) {
+      frame.detach();
+    }
     const clipped = shape !== null && (CLIPPED_SHAPES as readonly string[]).includes(shape);
     let outline = el.querySelector<SVGSVGElement>(`:scope > .${OUTLINE_CLASS}`);
     if (clipped) {
