@@ -35,6 +35,18 @@ interface MovedItem {
 /* The zoom items by the icon core sets on each. */
 const ZOOM_ICONS = { in: 'lucide-plus', reset: 'lucide-rotate-cw', fit: 'lucide-maximize', out: 'lucide-minus' } as const;
 
+/* Puts a moved element back before its old neighbour, or at the end
+   when that neighbour is gone; a reordered parent never throws out of
+   dispose, so the rest of a view's teardown still runs. */
+function putBack(parent: HTMLElement, el: HTMLElement, next: Element | null): void {
+  const ref = next && next.parentElement === parent ? next : null;
+  try {
+    parent.insertBefore(el, ref);
+  } catch {
+    parent.appendChild(el);
+  }
+}
+
 export function zoomPercent(zoom: number): number {
   return Math.round(Math.pow(2, Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom))) * 100);
 }
@@ -43,6 +55,7 @@ export class ColumnLayout {
   private menuHome: { parent: HTMLElement; next: Element | null } | null = null;
   private moved: MovedItem[] = [];
   private bar: HTMLElement | null = null;
+  private zoomGroup: HTMLElement | null = null;
   private percent: HTMLElement | null = null;
   private shown = -1;
   private restoreViewport: (() => void) | null = null;
@@ -75,14 +88,16 @@ export class ColumnLayout {
     this.abort.abort();
     this.restoreViewport?.();
     this.restoreViewport = null;
-    for (const item of this.moved.reverse()) item.group.insertBefore(item.el, item.next);
+    this.zoomGroup?.removeClass('icor-canvases-zoom-source');
+    this.zoomGroup = null;
+    for (const item of this.moved.reverse()) putBack(item.group, item.el, item.next);
     this.moved = [];
     this.bar?.detach();
     this.bar = null;
     const menu = cardMenu(this.canvas);
     if (menu && this.menuHome) {
       menu.removeClass('icor-canvases-card-menu', 'canvas-control-group', 'mod-raised');
-      this.menuHome.parent.insertBefore(menu, this.menuHome.next);
+      putBack(this.menuHome.parent, menu, this.menuHome.next);
     }
     this.menuHome = null;
   }
@@ -154,6 +169,7 @@ export class ColumnLayout {
     /* The group keeps the reset item, out of sight; a wrapper class
        hides the emptied group without touching its element. */
     group.addClass('icor-canvases-zoom-source');
+    this.zoomGroup = group;
     this.moved.push({ el: reset, group, next: reset.nextElementSibling });
     this.bar = bar;
     /* Presses on the bar are not presses on the canvas. */
