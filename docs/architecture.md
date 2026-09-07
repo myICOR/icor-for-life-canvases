@@ -124,7 +124,7 @@ against the next bundle before shipping on it.
 | `canvas.getViewportBBox()` | function | The view in canvas units, for the minimap rectangle. | `getViewportBBox=function(){var e=this.canvasRect` |
 | `canvas.markMoved(item)`, `markDirty(item)`, `removeNode(node)` | functions | Node changes; wrapped for the minimap's node layer. | `markMoved=function`, `markDirty=function(e){this.dirty.add(e)`, `removeNode=function(e){` |
 | The zoom items by icon: `lucide-plus`, `lucide-rotate-cw`, `lucide-maximize`, `lucide-minus` | DOM | How the layout finds the four zoom items in the second control group. | `Ag(e,"lucide-rotate-cw")` |
-| `node.startEditing()`, `iframe.embed-iframe` | function, DOM | A text card's editor mounts an iframe with its own document that receives the app's stylesheets (the plugin's included) and mirrors the body classes; the plugin marks its body for a styled card. | `startEditing=function(){` (two hits: the text and the file card) and `"embed-iframe"` |
+| `node.startEditing()`, `iframe.embed-iframe` | function, DOM | A text card's editor mounts an iframe with its own document that receives the app's stylesheets (the plugin's included) and mirrors the body classes; the plugin marks its body for a styled card. | `startEditing=function(){` (two hits: the base node and the group node; the text card's is `startEditing=function(t){e.prototype.startEditing.call(this)`) and `"embed-iframe"` |
 | `node.color`, `node.setColor(color)` | property, function | The card's own colour; the 0.2.0 outline colour migrates into it. | `setColor=function(e,t){void 0===t&&(t=!1),e=Z8(e` (two hits: node and edge) |
 
 Not used, and known: the `canvas:edge-menu` and `canvas:selection-menu`

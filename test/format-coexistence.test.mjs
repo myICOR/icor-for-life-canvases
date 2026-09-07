@@ -1,5 +1,5 @@
 /* Other plugins' keys survive our writes, at the top level and on a node
- * (docs/canvas-format.md, section 5). The fixture carries an Advanced
+ * (docs/canvas-format.md, section 6). The fixture carries an Advanced
  * Canvas style metadata member, a stray top-level key, and unknown keys
  * on a text card; a stroke commit and a shape and colour change leave
  * every one of them byte-identical. */

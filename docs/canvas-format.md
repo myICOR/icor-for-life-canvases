@@ -95,8 +95,8 @@ before any reader shipped).
 
 Readers other than this plugin:
 
-- **ICOR for Life - PDF Annotation** reads all three and never writes
-  them.
+- **ICOR for Life - PDF Annotation** (in development, not yet in the
+  suite) reads all three and never writes them.
 
 A reader must treat a missing `version` as 1 and a higher `version` than
 it knows as "not for me".
@@ -110,6 +110,10 @@ The plugin's writes preserve, byte for byte:
 - every key on a node the plugin does not own, whether Obsidian's or
   another plugin's;
 - every key of `icorStyle` this build does not know.
+
+Obsidian 1.13.7 writes no `metadata` of its own; every member there
+other than `icorCanvases` belongs to a third party, which is what the
+test protects.
 
 `test/format-coexistence.test.mjs` loads a fixture that carries foreign
 keys at both levels, commits a stroke and changes a shape and a colour,
