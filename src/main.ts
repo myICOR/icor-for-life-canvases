@@ -8,6 +8,7 @@
  * adapter (src/canvas/internals.ts). */
 import { Notice, Plugin, TFile } from 'obsidian';
 import { CanvasRegistry } from './canvas/registry';
+import type { Tool } from './canvas/tools';
 import { VIEW_TYPE } from './constants';
 import { CanvasIndex } from './index/CanvasIndex';
 import { debugLog } from './log';
@@ -92,14 +93,53 @@ export default class CanvasesPlugin extends Plugin {
   }
 
   private registerCommands(): void {
+    /* The 0.1.0 id is kept: the pen tool is what drawing mode became. */
     this.addCommand({
       id: 'toggle-drawing-mode',
-      name: 'Toggle drawing mode',
+      name: 'Pen tool',
       icon: 'pencil',
       checkCallback: (checking) => {
         const binding = this.registry.active();
         if (!binding?.ink) return false;
-        if (!checking) binding.ink.toggleDraw();
+        if (!checking) {
+          if (binding.tools) binding.tools.toggle('pen');
+          else binding.ink.toggleDraw();
+        }
+        return true;
+      },
+    });
+    const setTool = (checking: boolean, tool: Tool): boolean => {
+      const binding = this.registry.active();
+      if (!binding?.tools) return false;
+      if (!checking) binding.tools.setTool(tool);
+      return true;
+    };
+    this.addCommand({
+      id: 'select-tool',
+      name: 'Select tool',
+      icon: 'mouse-pointer',
+      checkCallback: (checking) => setTool(checking, 'select'),
+    });
+    this.addCommand({
+      id: 'hand-tool',
+      name: 'Hand tool',
+      icon: 'hand',
+      checkCallback: (checking) => setTool(checking, 'hand'),
+    });
+    this.addCommand({
+      id: 'eraser-tool',
+      name: 'Eraser tool',
+      icon: 'eraser',
+      checkCallback: (checking) => setTool(checking, 'eraser'),
+    });
+    this.addCommand({
+      id: 'group-selection',
+      name: 'Group the selection',
+      icon: 'create-group',
+      checkCallback: (checking) => {
+        const binding = this.registry.active();
+        if (!binding?.tools) return false;
+        if (!checking) binding.tools.createGroup();
         return true;
       },
     });

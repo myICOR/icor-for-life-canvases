@@ -11,6 +11,8 @@ import { asCanvasView, requireCanvas } from './internals';
 import type { Canvas, CanvasView } from './internals';
 import { NodeToolbars } from './nodeToolbar';
 import { wireModifierOpen } from './openInSidebar';
+import { SelectionMenuHook } from './selectionMenu';
+import { ToolControls } from './tools';
 import type { CanvasIndex } from '../index/CanvasIndex';
 import type { CanvasesSettings } from '../settings/model';
 import { penColorOf } from '../settings/model';
@@ -26,7 +28,9 @@ export interface CanvasBinding {
   view: CanvasView;
   canvas: Canvas;
   ink: InkLayer | null;
+  tools: ToolControls | null;
   toolbars: NodeToolbars | null;
+  selection: SelectionMenuHook | null;
   disposers: (() => void)[];
 }
 
@@ -52,6 +56,7 @@ export class CanvasRegistry {
     const s = this.host.settings();
     for (const binding of this.bindings.values()) {
       binding.ink?.applyDefaults(penColorOf(s.penColor), s.penWidth);
+      binding.tools?.reflect();
       binding.toolbars?.refreshAll();
     }
   }
@@ -64,17 +69,25 @@ export class CanvasRegistry {
     const host = this.host;
     const { app, index } = host;
     const canvas = view.canvas;
-    const binding: CanvasBinding = { view, canvas, ink: null, toolbars: null, disposers: [] };
+    const binding: CanvasBinding = { view, canvas, ink: null, tools: null, toolbars: null, selection: null, disposers: [] };
     const s = host.settings();
+    /* One wrap of the selection toolbar's render, shared. */
+    const selection = new SelectionMenuHook(canvas);
+    if (requireCanvas(canvas, ['menu'], 'Selection toolbar') && selection.attach()) binding.selection = selection;
     if (requireCanvas(canvas, INK_MEMBERS, 'Ink')) {
       binding.ink = new InkLayer(canvas, {
         color: penColorOf(s.penColor),
         width: s.penWidth,
         penDraws: () => host.settings().penDraws,
-        controls: !Platform.isPhone,
         log: (m) => host.log(m),
       });
       binding.ink.attach();
+      if (requireCanvas(canvas, ['wrapperEl', 'posFromEvt', 'panBy', 'selection', 'readonly', 'createGroupNode'], 'Tools')) {
+        const tools = new ToolControls(canvas, binding.ink, { controls: !Platform.isPhone, log: (m) => host.log(m) });
+        tools.attach();
+        binding.tools = tools;
+        binding.selection?.on(() => tools.onSelectionChange());
+      }
     }
     if (requireCanvas(canvas, ['nodes', 'addNode', 'view', 'selectOnly', 'zoomToSelection'], 'Card toolbar')) {
       binding.toolbars = new NodeToolbars(canvas, { app, index, enabled: () => host.settings().toolbar, log: (m) => host.log(m) });
@@ -92,8 +105,10 @@ export class CanvasRegistry {
     const binding = this.bindings.get(canvas);
     if (!binding) return;
     this.bindings.delete(canvas);
+    binding.tools?.dispose();
     binding.ink?.dispose();
     binding.toolbars?.dispose();
+    binding.selection?.dispose();
     for (const dispose of binding.disposers) dispose();
     this.host.log(`canvas released: ${binding.view.file?.path ?? '(no file)'}`);
   }

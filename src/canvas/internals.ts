@@ -48,6 +48,14 @@ export interface CanvasEdge {
    shows as focused (1.13.7, edge.select adds is-focused to its paths). */
 export type CanvasSelectable = CanvasNode | CanvasEdge;
 
+/* The floating toolbar core draws above the selection (class `n7` in
+   1.13.7): `render(rebuild)` runs from the frame loop on every selection
+   change with `rebuild` true, and on viewport changes with it false. */
+export interface CanvasMenu {
+  menuEl: HTMLElement;
+  render(rebuild?: boolean): void;
+}
+
 export interface Canvas {
   nodes: Map<string, CanvasNode>;
   edges: Map<string, CanvasEdge>;
@@ -79,6 +87,9 @@ export interface Canvas {
   zoomToSelection(): void;
   deselectAll(): void;
   addNode(node: CanvasNode): void;
+  panBy(dx: number, dy: number): void;
+  createGroupNode(options: { pos: { x: number; y: number }; size?: { width: number; height: number }; label?: string; save?: boolean; focus?: boolean }): CanvasNode;
+  menu?: CanvasMenu;
 }
 
 export interface CanvasView extends View {
@@ -129,6 +140,9 @@ const MEMBERS: Record<string, MemberKind> = {
   zoomToSelection: 'function',
   deselectAll: 'function',
   addNode: 'function',
+  panBy: 'function',
+  createGroupNode: 'function',
+  menu: 'object',
 };
 
 export type CanvasMember = keyof typeof MEMBERS;
@@ -184,6 +198,27 @@ export function isEdge(item: CanvasSelectable | null | undefined): item is Canva
   if (!item) return false;
   const e = item as Partial<CanvasEdge>;
   return typeof e.from === 'object' && e.from !== null && typeof e.to === 'object' && e.to !== null && typeof e.getBBox === 'function';
+}
+
+/* A text card: it carries `text` and nothing that a file or link card
+   carries. */
+export function isTextNode(node: CanvasNode | null | undefined): boolean {
+  if (!node) return false;
+  const n = node as Partial<CanvasNode> & { text?: unknown; filePath?: unknown; url?: unknown };
+  return typeof n.text === 'string' && typeof n.filePath !== 'string' && typeof n.url !== 'string';
+}
+
+export function isGroupNode(node: CanvasNode | null | undefined): boolean {
+  if (!node) return false;
+  const n = node as Partial<CanvasNode> & { label?: unknown; bgPath?: unknown };
+  return typeof n.label === 'string' && 'bgPath' in n;
+}
+
+/* The selection toolbar, when it has the shape the plugin wraps. */
+export function selectionMenu(canvas: Canvas): CanvasMenu | null {
+  const menu = canvas.menu;
+  if (!menu || !isHtmlElement(menu.menuEl) || typeof menu.render !== 'function') return null;
+  return menu;
 }
 
 export function isFileNode(node: CanvasNode | null | undefined): node is CanvasFileNode {

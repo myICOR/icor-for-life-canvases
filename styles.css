@@ -74,8 +74,8 @@
   stroke-width: 3.5;
 }
 
-/* The ink control group positions its flyouts. */
-.icor-canvases-ink-controls {
+/* The tool group positions its flyouts. */
+.icor-canvases-tools {
   position: relative;
 }
 
@@ -151,6 +151,23 @@
 
 .icor-canvases-ink-surface.is-erasing {
   cursor: cell;
+}
+
+/* The hand tool's surface: over the cards, under the controls; a drag
+   pans. */
+.icor-canvases-hand-surface {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  cursor: grab;
+  touch-action: none;
+}
+
+.icor-canvases-hand-surface.is-panning {
+  cursor: grabbing;
 }
 
 /* The note card toolbar and pill: hidden until the card is hovered or

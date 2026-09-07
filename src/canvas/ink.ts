@@ -1,21 +1,18 @@
 /* The ink layer of one canvas: an SVG overlay inside the canvas's own
- * transformed element, so strokes pan and zoom with the cards; a control
- * group in the canvas's controls column, styled by the theme like the
- * canvas's own; a draw surface that exists only while a pen mode is on,
- * so normal canvas interaction is untouched otherwise; and the strokes
- * themselves, which live in `canvas.data.metadata.icorCanvases` and are
+ * transformed element, so strokes pan and zoom with the cards; a draw
+ * surface that exists only while a pen mode is on, so normal canvas
+ * interaction is untouched otherwise; and the strokes themselves, which live in `canvas.data.metadata.icorCanvases` and are
  * saved by the canvas's own save path (see src/canvas/format.ts). Every
  * stroke change replaces `canvas.data` with a new object and calls
  * `requestSave`, which is also what puts the change into the canvas's undo
  * history; undo and redo, and a reload of the file, all land in `setData`
  * or `applyHistory`, both patched to re-render the overlay. */
-import { Notice, setIcon, setTooltip } from 'obsidian';
+import { Notice } from 'obsidian';
 import type { InkColor, InkStroke } from './format';
 import { readInk, withInk } from './format';
-import { INK_COLOR_NAMES, INK_WIDTH_UNITS, StrokeBuilder, newStrokeId, pathData, strokeHit } from './inkModel';
+import { INK_WIDTH_UNITS, StrokeBuilder, newStrokeId, pathData, strokeHit } from './inkModel';
 import type { InkWidth } from './inkModel';
 import { around, targetElement } from './internals';
-import { WIDTH_LABELS, openColorPicker, openWidthPicker } from './pickers';
 import type { Canvas, CanvasMember } from './internals';
 
 export type InkMode = 'off' | 'draw' | 'erase';
@@ -25,9 +22,6 @@ export interface InkOptions {
   width: InkWidth;
   /* Whether a stylus draws while drawing mode is off. Read per press. */
   penDraws: () => boolean;
-  /* No control group on a phone: the column is already full there and
-     the commands carry the same actions to the mobile toolbar. */
-  controls: boolean;
   log: (message: string) => void;
 }
 
@@ -56,11 +50,13 @@ export class InkLayer {
   /* A stylus press while the mode was off: the mode goes back off when
      the stroke ends. */
   private transient = false;
-  private color: InkColor;
-  private width: InkWidth;
+  private _color: InkColor;
+  private _width: InkWidth;
   private readonly penDraws: () => boolean;
-  private readonly controls: boolean;
   private readonly log: (message: string) => void;
+  /* The tool group follows the mode when it changes here: Escape, a
+     stylus press, a locked canvas. */
+  onModeChange: ((mode: InkMode) => void) | null = null;
   private readonly overlay: SVGSVGElement;
   private readonly abort = new AbortController();
   private surface: HTMLElement | null = null;
@@ -68,15 +64,12 @@ export class InkLayer {
   private drawing: Drawing | null = null;
   private erasing: number | null = null;
   private clearArmedAt = 0;
-  private items: Partial<Record<'pencil' | 'eraser' | 'color' | 'width', HTMLElement>> = {};
-  private group: HTMLElement | null = null;
   private readonly restores: (() => void)[] = [];
 
   constructor(private readonly canvas: Canvas, options: InkOptions) {
-    this.color = options.color;
-    this.width = options.width;
+    this._color = options.color;
+    this._width = options.width;
     this.penDraws = options.penDraws;
-    this.controls = options.controls;
     this.log = options.log;
     this.overlay = createSvg('svg', { cls: 'icor-canvases-ink' });
   }
@@ -109,8 +102,15 @@ export class InkLayer {
        listener, and the stroke runs on the surface through pointer
        capture. */
     canvas.view.contentEl.addEventListener('pointerdown', (evt) => this.onPenPress(evt), { capture: true, signal: this.abort.signal });
-    if (this.controls) this.buildControls();
     this.render();
+  }
+
+  get color(): InkColor {
+    return this._color;
+  }
+
+  get width(): InkWidth {
+    return this._width;
   }
 
   private onPenPress(evt: PointerEvent): void {
@@ -157,10 +157,9 @@ export class InkLayer {
     if (mode === 'off') this.removeSurface();
     else this.ensureSurface().toggleClass('is-erasing', mode === 'erase');
     this.overlay.toggleClass('is-active', mode !== 'off');
-    this.items.pencil?.toggleClass('is-active', mode === 'draw');
-    this.items.eraser?.toggleClass('is-active', mode === 'erase');
     if (mode !== 'off') this.canvas.wrapperEl.focus();
     this.log(`ink mode ${mode}`);
+    this.onModeChange?.(mode);
   }
 
   undoLast(): void {
@@ -189,88 +188,26 @@ export class InkLayer {
     new Notice('Click the clear button again within five seconds to remove every stroke on this canvas.');
   }
 
-  /* The pickers open as flyouts to the left of their button, every option
-     visible; a second press on the button closes. */
-  pickColor(): void {
-    const anchor = this.items.color;
-    const group = this.group;
-    if (!anchor || !group) return;
-    openColorPicker(anchor, group, 'left', this.color, (color) => this.setColor(color));
-  }
-
-  pickWidth(): void {
-    const anchor = this.items.width;
-    const group = this.group;
-    if (!anchor || !group) return;
-    openWidthPicker(anchor, group, 'left', this.width, (width) => this.setWidth(width));
-  }
-
   /* New defaults from the settings, applied to this canvas at once. */
   applyDefaults(color: InkColor, width: InkWidth): void {
     this.setColor(color);
     this.setWidth(width);
   }
 
+  setColor(color: InkColor): void {
+    this._color = color;
+  }
+
+  setWidth(width: InkWidth): void {
+    this._width = width;
+  }
+
   dispose(): void {
+    this.onModeChange = null;
     this.setMode('off');
     this.abort.abort();
     for (const restore of this.restores.splice(0)) restore();
-    this.group?.detach();
     this.overlay.detach();
-  }
-
-  private setColor(color: InkColor): void {
-    this.color = color;
-    const el = this.items.color;
-    if (!el) return;
-    el.className = 'canvas-control-item icor-canvases-ink-item icor-canvases-ink-color';
-    if (color) el.addClass(`icor-canvases-ink-color-${color}`);
-    setTooltip(el, `Ink colour: ${INK_COLOR_NAMES[color]}`, { placement: 'left' });
-  }
-
-  private setWidth(width: InkWidth): void {
-    this.width = width;
-    const el = this.items.width;
-    if (!el) return;
-    el.className = `canvas-control-item icor-canvases-ink-item icor-canvases-ink-width icor-canvases-ink-width-${width}`;
-    setTooltip(el, `Stroke width: ${WIDTH_LABELS[width]}`, { placement: 'left' });
-  }
-
-  private buildControls(): void {
-    const controlsEl = this.canvas.wrapperEl.querySelector<HTMLElement>('.canvas-controls');
-    if (!controlsEl) {
-      this.log('ink controls: no .canvas-controls element; the commands still work');
-      return;
-    }
-    /* The canvas's own control classes, on purpose: the theme styles the
-       group and its items like the zoom and undo controls above it. */
-    this.group = controlsEl.createDiv({ cls: ['canvas-control-group', 'mod-raised', 'icor-canvases-ink-controls'] });
-    this.items.pencil = this.item('pencil', 'Draw on the canvas', () => this.toggleDraw());
-    this.items.eraser = this.item('eraser', 'Erase strokes', () => this.toggleErase());
-    this.items.color = this.item('circle', '', () => this.pickColor());
-    this.items.width = this.item('pen-line', '', () => this.pickWidth());
-    this.item('undo-2', 'Undo last stroke', () => this.undoLast());
-    this.item('trash-2', 'Clear all strokes', () => this.clearAll());
-    this.setColor(this.color);
-    this.setWidth(this.width);
-  }
-
-  private item(icon: string, tooltip: string, onClick: () => void): HTMLElement {
-    const group = this.group;
-    if (!group) throw new Error('controls not built');
-    const el = group.createDiv({ cls: ['canvas-control-item', 'icor-canvases-ink-item'] });
-    setIcon(el, icon);
-    if (tooltip) setTooltip(el, tooltip, { placement: 'left' });
-    el.addEventListener(
-      'click',
-      (evt) => {
-        evt.preventDefault();
-        evt.stopPropagation();
-        onClick();
-      },
-      { signal: this.abort.signal },
-    );
-    return el;
   }
 
   private pathFor(id: string, color: InkColor, width: number, points: number[]): SVGPathElement {
@@ -345,7 +282,7 @@ export class InkLayer {
     const builder = new StrokeBuilder();
     builder.add(pos.x, pos.y, evt.pressure);
     const id = newStrokeId();
-    const path = this.pathFor(id, this.color, INK_WIDTH_UNITS[this.width], builder.points);
+    const path = this.pathFor(id, this._color, INK_WIDTH_UNITS[this._width], builder.points);
     this.overlay.appendChild(path);
     this.drawing = { id, builder, path, pointerId: evt.pointerId, pen: evt.pointerType === 'pen' };
   }
@@ -384,7 +321,7 @@ export class InkLayer {
     this.drawing = null;
     drawing.path.detach();
     if (drawing.builder.count === 0) return;
-    const stroke = drawing.builder.finish(drawing.id, this.color, INK_WIDTH_UNITS[this.width], drawing.pen);
+    const stroke = drawing.builder.finish(drawing.id, this._color, INK_WIDTH_UNITS[this._width], drawing.pen);
     this.commit([...readInk(this.canvas.data), stroke]);
   }
 

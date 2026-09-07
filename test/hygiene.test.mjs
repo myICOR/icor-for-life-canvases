@@ -95,7 +95,7 @@ test('every class the plugin adds carries the icor-canvases- prefix, apart from 
      container classes, so the theme styles the plugin's section like the
      pane's two. */
   const borrowed = new Set([
-    'canvas-control-group', 'mod-raised', 'canvas-control-item', 'is-empty', 'is-active', 'is-erasing', 'is-collapsed',
+    'canvas-control-group', 'mod-raised', 'canvas-control-item', 'is-empty', 'is-active', 'is-erasing', 'is-collapsed', 'is-panning',
     'tree-item-self', 'is-clickable', 'tree-item-icon', 'collapse-icon', 'tree-item-inner', 'tree-item-flair-outer', 'tree-item-flair', 'search-result-container', 'search-empty-state',
     'canvas-submenu', 'canvas-color-picker-item',
   ]);
