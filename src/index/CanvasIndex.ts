@@ -1,8 +1,12 @@
-/* Every .canvas file in the vault, parsed, and the map from a note to the
- * canvases it sits on. Built in the background once the layout is ready,
+/* Every .canvas file the metadata cache names, parsed, and the map from a
+ * note to the canvases it sits on. The cache lists a canvas as a link
+ * source once it holds a file card or a link (1.13.7 indexes canvas files
+ * through the core Canvas plugin), which is exactly the set with anything
+ * to index; the vault is never enumerated. Built once the layout is ready,
  * kept fresh from the vault's own events for canvas files (debounced), and
- * rebuilt once when the metadata cache reports the vault resolved. Views
- * subscribe and re-render on every change. */
+ * rebuilt once when the metadata cache reports the vault resolved (the
+ * cache may still be empty at layout-ready). Views subscribe and re-render
+ * on every change. */
 import { TFile, debounce } from 'obsidian';
 import type { App } from 'obsidian';
 import type { CanvasPlacements, Placement } from './parse';
@@ -30,10 +34,21 @@ export class CanvasIndex {
     return file instanceof TFile && file.extension === CANVAS_EXTENSION;
   }
 
-  /* Reads every canvas file. Safe to call again; the result replaces the
-     old map in one step. */
+  /* The canvas files the metadata cache names as link sources. */
+  private knownCanvases(): TFile[] {
+    const out: TFile[] = [];
+    for (const path of Object.keys(this.app.metadataCache.resolvedLinks)) {
+      if (!path.endsWith(`.${CANVAS_EXTENSION}`)) continue;
+      const file = this.app.vault.getFileByPath(path);
+      if (this.isCanvasFile(file)) out.push(file);
+    }
+    return out;
+  }
+
+  /* Reads every canvas file the cache names. Safe to call again; the
+     result replaces the old map in one step. */
   async rebuild(): Promise<void> {
-    const files = this.app.vault.getFiles().filter((f) => this.isCanvasFile(f));
+    const files = this.knownCanvases();
     const next = new Map<string, CanvasPlacements>();
     for (const file of files) {
       const placements = await this.read(file);
