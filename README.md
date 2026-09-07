@@ -69,7 +69,7 @@ stroke**. All work on the canvas in the most recently focused tab.
 
 Bottom right: **fit**, **zoom out**, the **live percentage**, **zoom
 in**. Click the percentage for a flyout: show or hide the minimap (or
-press M), fit to screen, 50%, 100%, 200%, 400%; a preset zooms around
+press M), fit to screen, 25%, 50%, 100%, 200%; a preset zooms around
 the centre of the view. Commands: **Zoom to fit**, **Zoom to 100%**,
 **Toggle minimap**.
 

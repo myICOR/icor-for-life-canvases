@@ -16,7 +16,7 @@ of 0.2.0.
   the canvas is clear.
 - **Zoom bar at the bottom right.** Fit, zoom out, the live percentage,
   zoom in. The percentage follows the zoom and opens a flyout: show or
-  hide the minimap (M), fit to screen, 50, 100, 200 and 400 percent,
+  hide the minimap (M), fit to screen, 25, 50, 100 and 200 percent,
   each zooming around the centre of the view. Commands: Zoom to fit,
   Zoom to 100%, Toggle minimap.
 - **Minimap.** A small map above the zoom bar: every card in its colour,

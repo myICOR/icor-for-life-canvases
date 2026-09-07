@@ -18,8 +18,9 @@ export interface LayoutHost {
   log(message: string): void;
 }
 
-/* The zoom presets in the percentage flyout. */
-export const ZOOM_PRESETS: readonly number[] = [50, 100, 200, 400];
+/* The zoom presets in the percentage flyout; core clamps the zoom to
+   log2 in [-4, 1], so 200 percent is the ceiling. */
+export const ZOOM_PRESETS: readonly number[] = [25, 50, 100, 200];
 
 /* Core clamps the zoom (log2) to this range in its frame. */
 const MIN_ZOOM = -4;
