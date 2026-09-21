@@ -6,6 +6,15 @@ audit every release goes through before its tag.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] - 2026-09-21
+
+### Changed
+- Relicensed under MIT. Releases before 0.4.0 remain under the ICOR for Life
+  Source-Available License (Code) v1.0.
+- Release workflow: actions pinned to commit SHAs, the release published with `gh`, and a release run can never mint its own tag.
+- README rewritten for the person installing the plugin, not the person rebuilding it.
+- Security contact is support@myicor.com.
+
 ## [0.3.1] - 2026-09-07
 
 The directory's scan of 0.3.0, before the listing.
