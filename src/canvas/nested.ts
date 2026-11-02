@@ -16,7 +16,7 @@ import type { Canvas } from './internals';
 import { openCanvasAtNode } from './navigate';
 import type { CanvasIndex, Unsubscribe } from '../index/CanvasIndex';
 import { basename } from '../index/parse';
-import { childName, staysInVault, validateCanvasName } from './naming';
+import { childName, scratchpadPrefix, staysInVault, validateCanvasName, withPrefix } from './naming';
 
 export interface NestedHost {
   app: App;
@@ -45,6 +45,8 @@ class NameModal extends Modal {
     app: App,
     initial: string,
     private readonly onSubmit: (name: string) => void,
+    /* Locked in front of what the user types; see `scratchpadPrefix`. */
+    private readonly prefix: string | null = null,
   ) {
     super(app);
     this.value = initial;
@@ -55,7 +57,7 @@ class NameModal extends Modal {
     let submitted = false;
     const submit = (): void => {
       if (submitted) return;
-      const verdict = validateCanvasName(this.value);
+      const verdict = validateCanvasName(this.prefix === null ? this.value : withPrefix(this.prefix, this.value));
       if (!verdict.ok) {
         new Notice(verdict.reason);
         return;
@@ -64,7 +66,9 @@ class NameModal extends Modal {
       this.close();
       this.onSubmit(verdict.name);
     };
-    new Setting(this.contentEl).setName('Name').addText((text) => {
+    const name = new Setting(this.contentEl).setName('Name');
+    if (this.prefix !== null) name.setDesc(`A canvas in the Daily Scratchpad keeps its dated start: ${this.prefix}`);
+    name.addText((text) => {
       text.setValue(this.value).onChange((v) => {
         this.value = v;
       });
@@ -189,9 +193,16 @@ export class NestedCanvases {
     const prefix = folder && folder !== '/' ? `${folder}/` : '';
     const pathFor = (name: string): string => normalizePath(`${prefix}${name}.canvas`);
     const taken = (name: string): boolean => host.app.vault.getAbstractFileByPath(pathFor(name)) !== null;
-    new NameModal(host.app, childName(parent.basename, taken), (name) => {
-      void this.create(pathFor(name), pos, size);
-    }).open();
+    const lockedPrefix = scratchpadPrefix(parent.basename, folder);
+    const suggested = childName(parent.basename, taken);
+    new NameModal(
+      host.app,
+      lockedPrefix === null ? suggested : suggested.slice(lockedPrefix.length),
+      (name) => {
+        void this.create(pathFor(name), pos, size);
+      },
+      lockedPrefix,
+    ).open();
   }
 
   private async create(path: string, pos: Pos, size?: Size): Promise<void> {

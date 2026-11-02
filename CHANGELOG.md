@@ -6,6 +6,21 @@ audit every release goes through before its tag.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.4.1] - 2026-11-02
+
+### Fixed
+- **Zoom to fit takes your ink in.** Core's fit button, Shift+1, the Zoom to
+  fit command and Fit to screen now zoom to the cards and the strokes
+  together. A canvas with no strokes fits as before.
+- **A nested canvas in the Daily Scratchpad keeps a dated name.** Inside
+  `00 Daily Scratchpad` the `<parent> - ` start of the name is locked and you
+  name only the rest, so a name such as `2026-11-02_canvas - Project ideas`
+  no longer trips Scaffold Check. Everywhere else the whole name stays yours.
+
+### Changed
+- The README says where the breadcrumb sits: the top corner opposite the
+  canvas controls, top right by default.
+
 ## [0.4.0] - 2026-09-21
 
 ### Changed

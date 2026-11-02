@@ -5,6 +5,9 @@
  * no control character, none of the characters the vault refuses, no
  * reserved Windows name. */
 
+/* The capture room, which Scaffold Check names the same way. */
+const SCRATCHPAD_ROOM = '00 Daily Scratchpad';
+
 const FORBIDDEN = /[\\/:*?"<>|]/;
 // eslint-disable-next-line no-control-regex -- the class is the control range the vault refuses in a name
 const CONTROL = /[\u0000-\u001f]/;
@@ -36,4 +39,24 @@ export function childName(parentBasename: string, taken: (name: string) => boole
     if (!taken(name)) return name;
   }
   return `${parentBasename} - ${Date.now()}`;
+}
+
+export function inScratchpad(folder: string): boolean {
+  return folder === SCRATCHPAD_ROOM || folder.startsWith(`${SCRATCHPAD_ROOM}/`);
+}
+
+/* The part of the name the user cannot change, or null when all of it is
+   theirs. The Daily Scratchpad takes dated names only: Scaffold Check accepts
+   `YYYY-MM-DD_canvas...` there and reads any other name as a note about a
+   subject, so a nested canvas keeps its parent's name in front. */
+export function scratchpadPrefix(parentBasename: string, folder: string): string | null {
+  return inScratchpad(folder) ? `${parentBasename} - ` : null;
+}
+
+/* The whole name from what was typed after the prefix. Nothing typed stays
+   nothing, so the validator refuses it. A pasted whole name keeps one prefix. */
+export function withPrefix(prefix: string, typed: string): string {
+  const suffix = typed.trim();
+  if (!suffix) return '';
+  return suffix.startsWith(prefix) ? suffix : `${prefix}${suffix}`;
 }

@@ -1,6 +1,6 @@
 {
   "name": "icor-for-life-canvases",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "description": "ICOR for Life - Canvases - ink, a node toolbar, sidebar opening and a canvas index for every note.",
   "license": "MIT",

@@ -44,7 +44,8 @@ than a card.
 ## Canvases inside canvases
 
 A card can be another canvas. Open it and you go one level down, with a
-breadcrumb to get back up. This is how a canvas stays readable once it gets
+breadcrumb to get back up, in the top corner opposite the canvas controls
+(top right by default). This is how a canvas stays readable once it gets
 big: the detail moves down a level instead of sprawling sideways.
 
 ## Finding your way back

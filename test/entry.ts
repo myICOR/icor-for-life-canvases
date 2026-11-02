@@ -3,6 +3,7 @@
  * belong here. */
 export * from '../src/canvas/format';
 export * from '../src/canvas/geometry';
+export * from '../src/canvas/fit';
 export * from '../src/canvas/flyoutPlacement';
 export * from '../src/canvas/naming';
 export * from '../src/index/store';
