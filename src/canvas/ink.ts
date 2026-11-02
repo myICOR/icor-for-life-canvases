@@ -9,6 +9,7 @@
  * or `applyHistory`, both patched to re-render the overlay. */
 import { Notice } from 'obsidian';
 import type { InkColor, InkStroke } from './format';
+import { fitWithInk } from './fit';
 import { readInk, withInk } from './format';
 import { INK_WIDTH_UNITS, StrokeBuilder, newStrokeId, pathData, strokeHit } from './inkModel';
 import type { InkWidth } from './inkModel';
@@ -91,6 +92,17 @@ export class InkLayer {
           return function (this: Canvas, data) {
             original?.call(this, data);
             render();
+          };
+        }),
+      );
+    }
+    /* Wrapped, not called from the plugin's own two fit entries: core's fit
+       button, moved into the zoom bar, and its Shift+1 go straight here. */
+    if (typeof canvas.zoomToFit === 'function') {
+      this.restores.push(
+        around(canvas, 'zoomToFit', (original) => {
+          return function (this: Canvas) {
+            fitWithInk(this, () => original.call(this));
           };
         }),
       );
