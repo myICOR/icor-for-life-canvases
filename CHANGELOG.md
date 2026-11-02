@@ -6,7 +6,7 @@ audit every release goes through before its tag.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/).
 
-## [0.4.1] - Unreleased
+## [0.4.1] - 2026-11-02
 
 ### Fixed
 - **Zoom to fit takes your ink in.** Core's fit button, Shift+1, the Zoom to
