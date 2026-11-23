@@ -1,5 +1,5 @@
 export const PLUGIN_ID = 'icor-for-life-canvases';
-export const PLUGIN_NAME = 'ICOR for Life - Canvases';
+export const PLUGIN_NAME = 'ICOR Canvases';
 /* Every DOM class this plugin ever adds starts with this, apart from the two
    canvas control classes it borrows on purpose so the theme styles the ink
    controls like the canvas's own (see src/canvas/ink.ts). */

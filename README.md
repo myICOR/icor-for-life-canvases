@@ -1,4 +1,4 @@
-# ICOR for Life - Canvases
+# ICOR Canvases
 
 **Think on a surface, not in a list.**
 
@@ -23,7 +23,7 @@ canvas three weeks ago is not lost; the note itself tells you where it is.
 ## Getting started
 
 Install from Obsidian's community plugin directory: **Settings, Community
-plugins, Browse**, search for "ICOR for Life - Canvases". Obsidian's own
+plugins, Browse**, search for "ICOR Canvases". Obsidian's own
 Canvas plugin must be on.
 
 Open any canvas. A controls column appears on the left. Pick the pen and

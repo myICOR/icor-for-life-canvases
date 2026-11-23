@@ -6,6 +6,11 @@ audit every release goes through before its tag.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.4.3] - 2026-11-23
+
+### Changed
+- The display name is now ICOR Canvases (it was ICOR for Life - Canvases). The plugin id stays `icor-for-life-canvases`, so installed vaults, settings and hotkeys carry on unchanged.
+
 ## [0.4.2] - 2026-11-23
 
 ### Changed

@@ -1,4 +1,4 @@
-/* ICOR for Life - Canvases. For Obsidian's canvas: an ink layer per
+/* ICOR Canvases. For Obsidian's canvas: an ink layer per
  * canvas, saved in the .canvas file; modifier-click on a note card to open
  * it in the right sidebar; a toolbar on every note card with a pill for
  * notes that sit on more than one canvas; and an index of every canvas in
