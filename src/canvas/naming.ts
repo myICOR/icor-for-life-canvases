@@ -5,8 +5,9 @@
  * no control character, none of the characters the vault refuses, no
  * reserved Windows name. */
 
-/* The capture room, which Scaffold Check names the same way. */
-const SCRATCHPAD_ROOM = '00 Daily Scratchpad';
+/* The daily folder: 00 Daily Notes since ICOR for Life 3.0 put the folders in ICOR stage order, 00 Daily Scratchpad
+   in a 2.x vault. Matched by full name. */
+const DAILY_FOLDERS = ['00 Daily Notes', '00 Daily Scratchpad'];
 
 const FORBIDDEN = /[\\/:*?"<>|]/;
 // eslint-disable-next-line no-control-regex -- the class is the control range the vault refuses in a name
@@ -42,11 +43,11 @@ export function childName(parentBasename: string, taken: (name: string) => boole
 }
 
 export function inScratchpad(folder: string): boolean {
-  return folder === SCRATCHPAD_ROOM || folder.startsWith(`${SCRATCHPAD_ROOM}/`);
+  return DAILY_FOLDERS.some((d) => folder === d || folder.startsWith(`${d}/`));
 }
 
 /* The part of the name the user cannot change, or null when all of it is
-   theirs. The Daily Scratchpad takes dated names only: Scaffold Check accepts
+   theirs. The daily folder takes dated names only: Scaffold Check accepts
    `YYYY-MM-DD_canvas...` there and reads any other name as a note about a
    subject, so a nested canvas keeps its parent's name in front. */
 export function scratchpadPrefix(parentBasename: string, folder: string): string | null {

@@ -31,10 +31,18 @@ test('childName never contains a separator and staysInVault refuses a dot segmen
 
 /* Tool Lab item 17. Scaffold Check's toolbar-canvas shape, copied from
    icor-for-life-scaffold-check main.js SCRATCHPAD_SHAPES: a name typed over
-   the prefill was read as a subject note in the capture room. */
+   the prefill was read as a subject note in the daily folder. */
 const SCAFFOLD_CANVAS = /^\d{4}-\d{2}-\d{2}_canvas([-_ ].*)?\.canvas$/;
 
-test('the Daily Scratchpad is the room and everything under it, and nothing that only looks like it', () => {
+test('3.0 stages: 00 Daily Notes is the daily folder, and the 2.x name still counts', () => {
+  assert.equal(inScratchpad('00 Daily Notes'), true);
+  assert.equal(inScratchpad('00 Daily Notes/2026/11'), true);
+  assert.equal(inScratchpad('00 Daily Notes Old'), false);
+  assert.equal(scratchpadPrefix('2026-11-02_canvas', '00 Daily Notes/2026/11'), '2026-11-02_canvas - ');
+  assert.equal(scratchpadPrefix('Map', '02 Inner World/Notes'), null);
+});
+
+test('the Daily Scratchpad is the folder and everything under it, and nothing that only looks like it', () => {
   assert.equal(inScratchpad('00 Daily Scratchpad'), true);
   assert.equal(inScratchpad('00 Daily Scratchpad/2026/11'), true);
   assert.equal(inScratchpad('00 Daily Scratchpad Old'), false);

@@ -6,6 +6,13 @@ audit every release goes through before its tag.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.4.2] - 2026-11-23
+
+### Changed
+- **The daily folder is `00 Daily Notes`.** ICOR for Life 3.0 numbers its folders in ICOR stage order, and the daily
+  notes folder is now `00 Daily Notes`. A nested canvas there keeps its dated start as before; `00 Daily Scratchpad`
+  in a 2.x vault still counts.
+
 ## [0.4.1] - 2026-11-02
 
 ### Fixed
