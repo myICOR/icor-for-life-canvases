@@ -1,6 +1,6 @@
 # Security Policy
 
-ICOR for Life - Canvases draws on a canvas, opens notes in other panes,
+ICOR Canvases draws on a canvas, opens notes in other panes,
 adds a toolbar to note cards, and reads every .canvas file in the vault to
 list where a note sits. It writes into the vault in three ways, every one
 started by a click: the ink and a text card's shape, colours, size and

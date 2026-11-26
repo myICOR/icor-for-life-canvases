@@ -1,4 +1,4 @@
-/* Build ICOR for Life - Canvases into a single CommonJS main.js for Obsidian.
+/* Build ICOR Canvases into a single CommonJS main.js for Obsidian.
  *
  * Everything the plugin needs at runtime comes from the host: `obsidian` is
  * external, so main.js carries only this plugin's own code. styles.css is

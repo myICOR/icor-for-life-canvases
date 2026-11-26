@@ -40,7 +40,7 @@ test('one identity across manifest, package and constants', () => {
   assert.equal(manifest.id, 'icor-for-life-canvases');
   assert.equal(PLUGIN_ID, manifest.id);
   assert.equal(pkg.name, manifest.id);
-  assert.equal(manifest.name, 'ICOR for Life - Canvases');
+  assert.equal(manifest.name, 'ICOR Canvases');
   assert.equal(PLUGIN_NAME, manifest.name);
   assert.equal(manifest.author, 'myICOR');
   assert.equal(manifest.authorUrl, 'https://myicor.com');

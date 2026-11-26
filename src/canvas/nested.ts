@@ -67,7 +67,7 @@ class NameModal extends Modal {
       this.onSubmit(verdict.name);
     };
     const name = new Setting(this.contentEl).setName('Name');
-    if (this.prefix !== null) name.setDesc(`A canvas in the Daily Scratchpad keeps its dated start: ${this.prefix}`);
+    if (this.prefix !== null) name.setDesc(`A canvas in your daily notes keeps its dated start: ${this.prefix}`);
     name.addText((text) => {
       text.setValue(this.value).onChange((v) => {
         this.value = v;
